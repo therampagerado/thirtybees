@@ -29,7 +29,6 @@
  *  PrestaShop is an internationally registered trademark & property of PrestaShop SA
  */
 
-use Jaybizzle\CrawlerDetect\CrawlerDetect;
 use PHPSQLParser\PHPSQLParser;
 use Thirtybees\Core\Error\ErrorUtils;
 
@@ -2620,14 +2619,8 @@ class ToolsCore
             stream_context_set_option($streamContext, ['http' => $opts['http']]);
         }
 
-        if (preg_match('/^(file|php|zlib|ftp|data|glob|phar):\/\//', $url)) {
-            return file_get_contents($url, $useIncludePath, $streamContext);
-        } elseif (!preg_match('/^https?:\/\//', $url)) {
-            if (file_exists($url)) {
-                return @file_get_contents($url, $useIncludePath, $streamContext);
-            } else {
-                return false;
-            }
+        if (!preg_match('/^https?:\/\//', $url)) {
+            return @file_get_contents($url, $useIncludePath, $streamContext);
         } elseif (function_exists('curl_init')) {
             $curl = curl_init();
             curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
@@ -3017,38 +3010,23 @@ class ToolsCore
      */
     public static function getMediaServer($filename)
     {
-        $shopId = (int)Context::getContext()->shop->id;
-        $mediaServers = static::getMediaServers($shopId);
-        static::$_cache_nb_media_servers = count($mediaServers);
-
-        if ($filename && $mediaServers) {
-            $index = abs(crc32($filename)) % static::$_cache_nb_media_servers;
-            return $mediaServers[$index];
-        }
-        return Tools::usingSecureMode() ? Tools::getShopDomainSSL() : Tools::getShopDomain();
-    }
-
-    /**
-     * @param int $shopId
-     *
-     * @return array
-     * @throws PrestaShopException
-     */
-    public static function getMediaServers(int $shopId)
-    {
-        $cacheId = 'Tools::getMediaServers_' . $shopId;
-        if (! Cache::isStored($cacheId)) {
-            $mediaServers = [];
-            for ($i = 1; $i <= 3; $i++) {
-                $key = 'PS_MEDIA_SERVER_' . $i;
-                $mediaServer = Configuration::get($key, null, null, $shopId);
-                if ($mediaServer) {
-                    $mediaServers[] = $mediaServer;
-                }
+        if (static::$_cache_nb_media_servers === null && defined('_MEDIA_SERVER_1_') && defined('_MEDIA_SERVER_2_') && defined('_MEDIA_SERVER_3_')) {
+            if (_MEDIA_SERVER_1_ == '') {
+                static::$_cache_nb_media_servers = 0;
+            } elseif (_MEDIA_SERVER_2_ == '') {
+                static::$_cache_nb_media_servers = 1;
+            } elseif (_MEDIA_SERVER_3_ == '') {
+                static::$_cache_nb_media_servers = 2;
+            } else {
+                static::$_cache_nb_media_servers = 3;
             }
-            Cache::store($cacheId, $mediaServers);
         }
-        return Cache::retrieve($cacheId);
+
+        if ($filename && static::$_cache_nb_media_servers && ($id_media_server = (abs(crc32($filename)) % static::$_cache_nb_media_servers + 1))) {
+            return constant('_MEDIA_SERVER_'.$id_media_server.'_');
+        }
+
+        return Tools::usingSecureMode() ? Tools::getShopDomainSSL() : Tools::getShopDomain();
     }
 
     /**
@@ -3221,15 +3199,7 @@ class ToolsCore
             return $acc . 'RewriteCond %{HTTP_HOST} ^' . $mediaServer . '$ [OR]' . "\n";
         }, '');
 
-
-        $supportedMainImageExtensions = ImageManager::getAllowedImageExtensions(true, true);
-        $supportedMainImageExtensions[] = 'jpeg';
-        $supportedMainImageExtensions = array_unique($supportedMainImageExtensions);
-        sort($supportedMainImageExtensions);
-        $extensionsPattern = implode('|', $supportedMainImageExtensions);
-
         foreach ($domains as $domain => $list_uri) {
-            $domain_rewrite_cond = 'RewriteCond %{HTTP_HOST} ^'.$domain.'$'."\n";
             foreach ($list_uri as $uri) {
                 fwrite($write_fd, PHP_EOL.PHP_EOL.'# Domain: '.$domain.PHP_EOL);
                 if (Shop::isFeatureActive()) {
@@ -3246,6 +3216,7 @@ class ToolsCore
                     $rewrite_settings = (int) Configuration::get('PS_REWRITING_SETTINGS', null, null, (int) $uri['id_shop']);
                 }
 
+                $domain_rewrite_cond = 'RewriteCond %{HTTP_HOST} ^'.$domain.'$'."\n";
                 // Rewrite virtual multishop uri
                 if ($uri['virtual']) {
                     fwrite($write_fd, "# Virtual uri\n");
@@ -3263,17 +3234,25 @@ class ToolsCore
                     fwrite($write_fd, 'RewriteRule ^'.ltrim($uri['virtual'], '/').'(.*) '.$uri['physical']."$1 [L]\n\n");
                 }
 
+                $supportedMainImageExtensions = ImageManager::getAllowedImageExtensions(true, true);
+                $supportedMainImageExtensions[] = 'jpeg';
+
                 if ($rewrite_settings) {
-                    fwrite($write_fd, "# Images\n");
+                    fwrite($write_fd, "# Images\n\n");
                     foreach (ImageEntity::getImageEntities() as $entity) {
                         $name = $entity['name'];
                         $path = trim(str_replace(_PS_ROOT_DIR_, '', $entity['path']), '/') . '/';
                         fwrite($write_fd, "\n# $name images\n");
-
                         if ($name !== ImageEntity::ENTITY_TYPE_PRODUCTS) {
-                            fwrite($write_fd, $mediaDomains);
-                            fwrite($write_fd, $domain_rewrite_cond);
-                            fwrite($write_fd, 'RewriteRule ^'.$name.'/([0-9]+)(\-[_a-zA-Z0-9\s-]*)?/.+?([2-4]x)?\.(' . $extensionsPattern . ')$ %{ENV:REWRITEBASE}'.$path.'$1$2$3.$4 [L]' . "\n");
+                            foreach ($supportedMainImageExtensions as $imageExtension) {
+                                fwrite($write_fd, $mediaDomains);
+                                fwrite($write_fd, $domain_rewrite_cond);
+                                fwrite($write_fd, 'RewriteRule ^'.$name.'/([0-9]+)(\-[\.*_a-zA-Z0-9\s-]*)(-[0-9]+)?/.+?([2-4]x)?\.' . $imageExtension . '$ %{ENV:REWRITEBASE}'.$path.'$1$2$3$4.' . $imageExtension . ' [L]' . "\n");
+
+                                fwrite($write_fd, $mediaDomains);
+                                fwrite($write_fd, $domain_rewrite_cond);
+                                fwrite($write_fd, 'RewriteRule ^'.$name.'/([a-zA-Z\s_-]+)(-[0-9]+)?/.+?([2-4]x)?\.' . $imageExtension . '$ %{ENV:REWRITEBASE}'.$path.'$1$2$3.' . $imageExtension . ' [L]' . "\n");
+                            }
                         } else {
                             for ($i = 1; $i <= 8; $i++) {
                                 $img_path = $img_name = '';
@@ -3283,13 +3262,20 @@ class ToolsCore
                                 }
                                 $img_name .= '$'.$j;
 
-                                fwrite($write_fd, $mediaDomains);
-                                fwrite($write_fd, $domain_rewrite_cond);
-                                fwrite($write_fd, 'RewriteRule ^'.$name.'/'.str_repeat('([0-9])', $i).'(\-[_a-zA-Z0-9\s-]*)?/.+?([2-4]x)?\.('.$extensionsPattern.')$ %{ENV:REWRITEBASE}'.$path.$img_path.$img_name.'$'.($j + 1).'.$'.($j+2)." [L]\n");
+                                foreach ($supportedMainImageExtensions as $imageExtension) {
+                                    fwrite($write_fd, $mediaDomains);
+                                    fwrite($write_fd, $domain_rewrite_cond);
+                                    fwrite($write_fd, 'RewriteRule ^'.$name.'/'.str_repeat('([0-9])', $i).'(\-[_a-zA-Z0-9\s-]*)?(-[0-9]+)?/.+?([2-4]x)?\.'.$imageExtension.'$ %{ENV:REWRITEBASE}'.$path.$img_path.$img_name.'$'.($j + 1).'$'.($j + 2).'.'.$imageExtension." [L]\n");
+                                }
                             }
                         }
                     }
                 }
+
+                fwrite($write_fd, "\n# AlphaImageLoader for IE and fancybox\n");
+                fwrite($write_fd, $mediaDomains);
+                fwrite($write_fd, $domain_rewrite_cond);
+                fwrite($write_fd, 'RewriteRule ^images_ie/?([^/]+)\.('.implode('|', $supportedMainImageExtensions).')$ js/jquery/plugins/fancybox/images/$1.$2 [L]'."\n");
             }
 
             // Redirections to dispatcher
@@ -3332,7 +3318,7 @@ class ToolsCore
 	ExpiresByType image/jpeg \"access plus 1 year\"
 	ExpiresByType image/png \"access plus 1 year\"
 	ExpiresByType image/webp \"access plus 1 year\"
-	ExpiresByType image/avif \"access plus 1 year\"
+        ExpiresByType image/avif \"access plus 1 year\"
 	ExpiresByType text/css \"access plus 1 year\"
 	ExpiresByType text/javascript \"access plus 1 year\"
 	ExpiresByType application/javascript \"access plus 1 year\"
@@ -5598,19 +5584,6 @@ FileETag none
         }
 
         return 'GET';
-    }
-
-    /**
-     * @return bool
-     */
-    public static function isCrawler(): bool
-    {
-        try {
-            $detect = new CrawlerDetect();
-            return $detect->isCrawler();
-        } catch (Throwable $e) {
-            return false;
-        }
     }
 }
 
