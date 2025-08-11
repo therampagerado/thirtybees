@@ -153,9 +153,10 @@ class CMSCategoryCore extends ObjectModel
             (new DbQuery())
                 ->select('c.`id_cms_category`, c.`id_parent`, c.`level_depth`, cl.`name`, cl.`link_rewrite`')
                 ->from('cms_category', 'c')
-                ->innerJoin('cms_category_lang', 'cl', 'c.`id_cms_category` = cl.`id_cms_category`')
+                ->join(Shop::addSqlAssociation('cms_category', 'c'))
+                ->innerJoin('cms_category_lang', 'cl', 'c.`id_cms_category` = cl.`id_cms_category`'.Shop::addSqlRestrictionOnLang('cl'))
                 ->where('c.`id_cms_category` = '.(int) $current)
-                ->where('`id_lang` = '.(int) $idLang)
+                ->where('cl.`id_lang` = '.(int) $idLang)
         );
 
         if (! $category) {
@@ -163,8 +164,8 @@ class CMSCategoryCore extends ObjectModel
         }
 
         $sql = 'SELECT c.`id_cms_category`
-				FROM `'._DB_PREFIX_.'cms_category` c
-				WHERE c.`id_parent` = '.(int) $current.
+                                FROM `'._DB_PREFIX_.'cms_category` c'.Shop::addSqlAssociation('cms_category', 'c').'
+                                WHERE c.`id_parent` = '.(int) $current.
             ($active ? ' AND c.`active` = 1' : '');
         $result = $connection->getArray($sql);
         $children = [];
@@ -239,12 +240,13 @@ class CMSCategoryCore extends ObjectModel
     {
         $result = Db::readOnly()->getArray(
             '
-		SELECT *
-		FROM `'._DB_PREFIX_.'cms_category` c
-		LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON c.`id_cms_category` = cl.`id_cms_category`
-		WHERE `id_lang` = '.(int) $idLang.'
-		'.($active ? 'AND `active` = 1' : '').'
-		ORDER BY `name` ASC'
+                SELECT c.*, cl.*
+                FROM `'._DB_PREFIX_.'cms_category` c
+                '.Shop::addSqlAssociation('cms_category', 'c').'
+                LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON c.`id_cms_category` = cl.`id_cms_category`'.Shop::addSqlRestrictionOnLang('cl').'
+                WHERE cl.`id_lang` = '.(int) $idLang.
+                ($active ? ' AND c.`active` = 1' : '').'
+                ORDER BY cl.`name` ASC'
         );
 
         if (!$order) {
@@ -271,11 +273,12 @@ class CMSCategoryCore extends ObjectModel
     {
         return Db::readOnly()->getArray(
             '
-		SELECT c.`id_cms_category`, cl.`name`
-		FROM `'._DB_PREFIX_.'cms_category` c
-		LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON (c.`id_cms_category` = cl.`id_cms_category`)
-		WHERE cl.`id_lang` = '.(int) $idLang.'
-		ORDER BY cl.`name`'
+                SELECT c.`id_cms_category`, cl.`name`
+                FROM `'._DB_PREFIX_.'cms_category` c
+                '.Shop::addSqlAssociation('cms_category', 'c').'
+                LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON c.`id_cms_category` = cl.`id_cms_category`'.Shop::addSqlRestrictionOnLang('cl').'
+                WHERE cl.`id_lang` = '.(int) $idLang.'
+                ORDER BY cl.`name`'
         );
     }
 
@@ -309,13 +312,14 @@ class CMSCategoryCore extends ObjectModel
     {
         $result = Db::readOnly()->getArray(
             '
-		SELECT c.`id_cms_category`, cl.`name`, cl.`link_rewrite`
-		FROM `'._DB_PREFIX_.'cms_category` c
-		LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON c.`id_cms_category` = cl.`id_cms_category`
-		WHERE `id_lang` = '.(int) $idLang.'
-		AND c.`id_parent` = '.(int) $idParent.'
-		'.($active ? 'AND `active` = 1' : '').'
-		ORDER BY `name` ASC'
+                SELECT c.`id_cms_category`, cl.`name`, cl.`link_rewrite`
+                FROM `'._DB_PREFIX_.'cms_category` c
+                '.Shop::addSqlAssociation('cms_category', 'c').'
+                LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON c.`id_cms_category` = cl.`id_cms_category`'.Shop::addSqlRestrictionOnLang('cl').'
+                WHERE cl.`id_lang` = '.(int) $idLang.'
+                AND c.`id_parent` = '.(int) $idParent.
+                ($active ? ' AND c.`active` = 1' : '').'
+                ORDER BY cl.`name` ASC'
         );
 
         // Modify SQL result
@@ -651,13 +655,15 @@ class CMSCategoryCore extends ObjectModel
     {
         $result = Db::readOnly()->getArray(
             '
-		SELECT c.*, cl.id_lang, cl.name, cl.description, cl.link_rewrite, cl.meta_title, cl.meta_keywords, cl.meta_description
-		FROM `'._DB_PREFIX_.'cms_category` c
-		LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON (c.`id_cms_category` = cl.`id_cms_category` AND `id_lang` = '.(int) $idLang.')
-		WHERE `id_parent` = '.(int) $this->id.'
-		'.($active ? 'AND `active` = 1' : '').'
-		GROUP BY c.`id_cms_category`
-		ORDER BY `name` ASC'
+                SELECT c.*, cl.id_lang, cl.name, cl.description, cl.link_rewrite, cl.meta_title, cl.meta_keywords, cl.meta_description
+                FROM `'._DB_PREFIX_.'cms_category` c
+                '.Shop::addSqlAssociation('cms_category', 'c').'
+                LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON c.`id_cms_category` = cl.`id_cms_category`'.Shop::addSqlRestrictionOnLang('cl').'
+                WHERE cl.`id_lang` = '.(int) $idLang.'
+                AND c.`id_parent` = '.(int) $this->id.
+                ($active ? ' AND c.`active` = 1' : '').'
+                GROUP BY c.`id_cms_category`
+                ORDER BY cl.`name` ASC'
         );
 
         // Modify SQL result
@@ -841,11 +847,13 @@ class CMSCategoryCore extends ObjectModel
         $idCurrent = $this->id;
         while (true) {
             $query = '
-				SELECT c.*, cl.*
-				FROM `'._DB_PREFIX_.'cms_category` c
-				LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON (c.`id_cms_category` = cl.`id_cms_category` AND `id_lang` = '.(int) $idLang.')
-				WHERE c.`id_cms_category` = '.(int) $idCurrent.' AND c.`id_parent` != 0
-			';
+                                SELECT c.*, cl.*
+                                FROM `'._DB_PREFIX_.'cms_category` c
+                                '.Shop::addSqlAssociation('cms_category', 'c').'
+                                LEFT JOIN `'._DB_PREFIX_.'cms_category_lang` cl ON c.`id_cms_category` = cl.`id_cms_category`'.Shop::addSqlRestrictionOnLang('cl').'
+                                WHERE c.`id_cms_category` = '.(int) $idCurrent.' AND c.`id_parent` != 0
+                                AND cl.`id_lang` = '.(int) $idLang.'
+                        ';
             $result = Db::readOnly()->getArray($query);
 
             $categories[] = $result[0];
