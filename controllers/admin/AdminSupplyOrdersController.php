@@ -1262,7 +1262,7 @@ class AdminSupplyOrdersControllerCore extends AdminController
                 }
 
                 // specify initial state
-                $_POST['id_supply_order_state'] = 1; //defaut creation state
+                $_POST['id_supply_order_state'] = 1; //default creation state
 
                 // specify global reference currency
                 $_POST['id_ref_currency'] = Currency::getDefaultCurrency()->id;

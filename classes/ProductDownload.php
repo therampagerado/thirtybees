@@ -107,11 +107,11 @@ class ProductDownloadCore extends ObjectModel
 
     /**
      * Find a product's download. As class Product doesn't maintain it's
-     * download, that's the way to find out wether there's a download and
+     * download, that's the way to find out whether there's a download and
      * which one it is.
      *
      * @param int $idProduct Product ID.
-     * @param bool $active Wether only an active download or any download.
+     * @param bool $active Whether only an active download or any download.
      *
      * @return int ID of the product download or 0 if there's none.
      *

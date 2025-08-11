@@ -2729,7 +2729,7 @@ class AdminProductsControllerCore extends AdminController
                 }
             }
 
-            // Manage defaut supplier for product
+            // Manage default supplier for product
             $newDefaultSupplier = Tools::getIntValue('default_supplier');
             if ($newDefaultSupplier !== (int)$product->id_supplier) {
                 $this->object->setFieldsToUpdate([

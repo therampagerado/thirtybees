@@ -679,7 +679,7 @@ class OrderOpcControllerCore extends ParentOrderController
             $countries = Country::getCountries($this->context->language->id, true);
         }
 
-        // If a rule offer free-shipping, force hidding shipping prices
+        // If a rule offer free-shipping, force hiding shipping prices
         $freeShipping = false;
         foreach ($cart->getCartRules() as $rule) {
             if ($rule['free_shipping'] && !$rule['carrier_restriction']) {

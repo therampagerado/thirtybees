@@ -562,7 +562,7 @@ class HookCore extends ObjectModel
                     }
                 }
             } else {
-                Logger::addLog("Module '{$array['module']}' doesn't implement public hook handler method '$hookMethod()'. This hook will be unregistred.", 2, 0, 'Module', $moduleInstance->id, true);
+                Logger::addLog("Module '{$array['module']}' doesn't implement public hook handler method '$hookMethod()'. This hook will be unregistered.", 2, 0, 'Module', $moduleInstance->id, true);
                 $moduleInstance->unregisterHook((int)$idHook);
             }
         }

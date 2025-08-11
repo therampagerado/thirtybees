@@ -61,7 +61,7 @@ class AdminShopControllerCore extends AdminController
 
         $this->id_shop_group = Tools::getIntValue('id_shop_group');
 
-        /* if $_GET['id_shop'] is transmitted, virtual url can be loaded in config.php, so we wether transmit shop_id in herfs */
+        /* if $_GET['id_shop'] is transmitted, virtual url can be loaded in config.php, so we whether transmit shop_id in herfs */
         if ($this->id_shop = Tools::getIntValue('shop_id')) {
             $_GET['id_shop'] = $this->id_shop;
         }

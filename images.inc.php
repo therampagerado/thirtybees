@@ -115,10 +115,10 @@ function createDestImage($width, $height)
 /**
  * @deprecated 1.5.0
  */
-function returnDestImage($type, $ressource, $filename)
+function returnDestImage($type, $resource, $filename)
 {
     Tools::displayAsDeprecated();
-    return ImageManager::write($type, $ressource, $filename);
+    return ImageManager::write($type, $resource, $filename);
 }
 
 /**

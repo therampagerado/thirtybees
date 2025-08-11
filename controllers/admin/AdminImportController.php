@@ -1261,7 +1261,7 @@ class AdminImportControllerCore extends AdminController
             }
             $doneCount = 0;
             // Sometime, import will use registers to memorize data across all elements to import (for trees, or else).
-            // Since import is splitted in multiple ajax calls, we must keep these data across all steps of the full import.
+            // Since import is split in multiple ajax calls, we must keep these data across all steps of the full import.
             $crossStepsVariables = [];
             if ($crossStepsVars = Tools::getValue('crossStepsVars')) {
                 $crossStepsVars = json_decode($crossStepsVars, true);

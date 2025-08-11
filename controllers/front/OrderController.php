@@ -202,7 +202,7 @@ class OrderControllerCore extends ParentOrderController
         parent::initContent();
 
         if (Tools::isSubmit('ajax') && Tools::getValue('method') == 'updateExtraCarrier') {
-            // Change virtualy the currents delivery options
+            // Change virtually the currents delivery options
             $deliveryOption = $this->context->cart->getDeliveryOption();
             $deliveryOption[Tools::getIntValue('id_address')] = Tools::getValue('id_delivery_option');
             $this->context->cart->setDeliveryOption($deliveryOption);

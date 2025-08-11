@@ -622,7 +622,7 @@ function print_r(element, limit, depth) {
   returnString = '<ol>';
 
   for (property in element) {
-    //Property domConfig isn't accessable
+    //Property domConfig isn't accessible
     if (property != 'domConfig') {
       returnString += '<li><strong>' + property + '</strong> <small>(' + (typeof element[property]) + ')</small>';
 

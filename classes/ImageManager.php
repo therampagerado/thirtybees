@@ -838,7 +838,7 @@ class ImageManagerCore
         $src = [
             'width'     => $srcInfo[0],
             'height'    => $srcInfo[1],
-            'ressource' => ImageManager::create($srcInfo[2], $srcFile),
+            'resource' => ImageManager::create($srcInfo[2], $srcFile),
         ];
 
         // Destination information
@@ -847,13 +847,13 @@ class ImageManagerCore
         $dest['y'] = $dstY;
         $dest['width'] = !is_null($dstWidth) ? $dstWidth : $src['width'];
         $dest['height'] = !is_null($dstHeight) ? $dstHeight : $src['height'];
-        $dest['ressource'] = ImageManager::createWhiteImage($dest['width'], $dest['height']);
+        $dest['resource'] = ImageManager::createWhiteImage($dest['width'], $dest['height']);
 
-        $white = imagecolorallocate($dest['ressource'], 255, 255, 255);
-        imagecopyresampled($dest['ressource'], $src['ressource'], 0, 0, $dest['x'], $dest['y'], $dest['width'], $dest['height'], $dest['width'], $dest['height']);
-        imagecolortransparent($dest['ressource'], $white);
-        $return = ImageManager::write($imageExtension, $dest['ressource'], $dstFile);
-        @imagedestroy($src['ressource']);
+        $white = imagecolorallocate($dest['resource'], 255, 255, 255);
+        imagecopyresampled($dest['resource'], $src['resource'], 0, 0, $dest['x'], $dest['y'], $dest['width'], $dest['height'], $dest['width'], $dest['height']);
+        imagecolortransparent($dest['resource'], $white);
+        $return = ImageManager::write($imageExtension, $dest['resource'], $dstFile);
+        @imagedestroy($src['resource']);
 
         return $return;
     }

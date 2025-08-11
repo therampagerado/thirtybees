@@ -119,7 +119,7 @@ class TranslateCore
 
         static $langCache = [];
         // $_MODULES is a cache of translations for all module.
-        // $translations_merged is a cache of wether a specific module's translations have already been added to $_MODULES
+        // $translations_merged is a cache of whether a specific module's translations have already been added to $_MODULES
         static $translationsMerged = [];
 
         $name = $module instanceof Module ? $module->name : $module;

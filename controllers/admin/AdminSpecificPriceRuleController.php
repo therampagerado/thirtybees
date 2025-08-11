@@ -52,7 +52,7 @@ class AdminSpecificPriceRuleControllerCore extends AdminController
         $this->lang = false;
         $this->multishop_context = Shop::CONTEXT_ALL;
 
-        /* if $_GET['id_shop'] is transmitted, virtual url can be loaded in config.php, so we wether transmit shop_id in herfs */
+        /* if $_GET['id_shop'] is transmitted, virtual url can be loaded in config.php, so we whether transmit shop_id in herfs */
         if ($idShop = Tools::getIntValue('shop_id')) {
             $_GET['id_shop'] = $idShop;
             $_POST['id_shop'] = $idShop;

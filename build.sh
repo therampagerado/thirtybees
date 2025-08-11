@@ -160,7 +160,7 @@ fi
 # catch all the situations where some pre-release work steps have been
 # forgotten.
 
-# Heuristics on wether to validate the stuff to be packaged. This should detect
+# Heuristics on whether to validate the stuff to be packaged. This should detect
 # 'forgotten' commits in core as well as modules in need of a new release.
 # Heuristics:
 # - Less than 30 commits on the branch of the to be packaged commit.

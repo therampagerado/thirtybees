@@ -340,13 +340,13 @@ function checkTabRights($id_tab)
  * ...And so on.
  * _____________________________________
  * @param simpleXMLElement $xml the XML to convert
- * @param bool $flatten_values Choose wether to flatten values
+ * @param bool $flatten_values Choose whether to flatten values
  *                                    or to set them under a particular index.
  *                                    defaults to true;
- * @param bool $flatten_attributes Choose wether to flatten attributes
+ * @param bool $flatten_attributes Choose whether to flatten attributes
  *                                    or to set them under a particular index.
  *                                    Defaults to true;
- * @param bool $flatten_children Choose wether to flatten children
+ * @param bool $flatten_children Choose whether to flatten children
  *                                    or to set them under a particular index.
  *                                    Defaults to true;
  * @param string $value_key index for values, in case $flatten_values was set to false. Defaults to "@value"

@@ -390,7 +390,7 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
      * Subscribe to the thirty bees newsletter. Also resets $this->optin on
      * failure.
      *
-     * @return bool Wether un/registration was successful.
+     * @return bool Whether un/registration was successful.
      *
      * @throws PrestaShopException
      */

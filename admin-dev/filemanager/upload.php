@@ -18,9 +18,9 @@ if (!empty($_FILES) && isset($_FILES['file']) && $_FILES['file']['tmp_name']) {
         $targetPathThumb = $storeFolderThumb;
         $_FILES['file']['name'] = fix_filename($_FILES['file']['name']);
 
-        $file_name_splitted = explode('.', $_FILES['file']['name']);
-        array_pop($file_name_splitted);
-        $_FILES['file']['name'] = implode('-', $file_name_splitted).'.'.$fileExtension;
+        $file_name_split = explode('.', $_FILES['file']['name']);
+        array_pop($file_name_split);
+        $_FILES['file']['name'] = implode('-', $file_name_split).'.'.$fileExtension;
 
         if (file_exists($targetPath.$_FILES['file']['name'])) {
             $i = 1;

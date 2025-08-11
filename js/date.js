@@ -1,6 +1,6 @@
 /*
  * Date prototype extensions. Doesn't depend on any
- * other code. Doens't overwrite existing methods.
+ * other code. Doesn't overwrite existing methods.
  *
  * Adds dayNames, abbrDayNames, monthNames and abbrMonthNames static properties and isLeapYear,
  * isWeekend, isWeekDay, getDaysInMonth, getDayName, getMonthName, getDayOfYear, getWeekOfYear,
@@ -42,7 +42,7 @@ Date.dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday
 Date.abbrDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 /**
- * An Array of month names starting with Janurary.
+ * An Array of month names starting with January.
  * 
  * @example monthNames[0]
  * @result 'January'
@@ -200,7 +200,7 @@ Date.fullYearStart = '20';
 	 * 
 	 * @example var dtm = new Date("01/12/2008");
 	 * dtm.getMonthName();
-	 * @result 'Janurary'
+	 * @result 'January'
 	 *
 	 * @example var dtm = new Date("01/12/2008");
 	 * dtm.getMonthName(true);
