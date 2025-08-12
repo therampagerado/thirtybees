@@ -1,240 +1,240 @@
 [submodule "modules/bankwire"]
 	path = modules/bankwire
-	url = https://github.com/thirtybees/bankwire.git
+	url = https://github.com/therampagerado/bankwire.git
 	ignore = dirty
 [submodule "modules/beesblog"]
 	path = modules/beesblog
-	url = https://github.com/thirtybees/beesblog.git
+	url = https://github.com/therampagerado/beesblog.git
 	ignore = dirty
 [submodule "modules/beesblogpopularposts"]
 	path = modules/beesblogpopularposts
-	url = https://github.com/thirtybees/beesblogpopularposts.git
+	url = https://github.com/therampagerado/beesblogpopularposts.git
 	ignore = dirty
 [submodule "modules/blockbanner"]
 	path = modules/blockbanner
-	url = https://github.com/thirtybees/blockbanner.git
+	url = https://github.com/therampagerado/blockbanner.git
 	ignore = dirty
 [submodule "modules/blockbestsellers"]
 	path = modules/blockbestsellers
-	url = https://github.com/thirtybees/blockbestsellers.git
+	url = https://github.com/therampagerado/blockbestsellers.git
 	ignore = dirty
 [submodule "modules/blockcart"]
 	path = modules/blockcart
-	url = https://github.com/thirtybees/blockcart.git
+	url = https://github.com/therampagerado/blockcart.git
 	ignore = dirty
 [submodule "modules/blockcategories"]
 	path = modules/blockcategories
-	url = https://github.com/thirtybees/blockcategories.git
+	url = https://github.com/therampagerado/blockcategories.git
 	ignore = dirty
 [submodule "modules/blockcms"]
 	path = modules/blockcms
-	url = https://github.com/thirtybees/blockcms.git
+	url = https://github.com/therampagerado/blockcms.git
 	ignore = dirty
 [submodule "modules/blockcmsinfo"]
 	path = modules/blockcmsinfo
-	url = https://github.com/thirtybees/blockcmsinfo.git
+	url = https://github.com/therampagerado/blockcmsinfo.git
 	ignore = dirty
 [submodule "modules/blockcontact"]
 	path = modules/blockcontact
-	url = https://github.com/thirtybees/blockcontact.git
+	url = https://github.com/therampagerado/blockcontact.git
 	ignore = dirty
 [submodule "modules/blockcontactinfos"]
 	path = modules/blockcontactinfos
-	url = https://github.com/thirtybees/blockcontactinfos.git
+	url = https://github.com/therampagerado/blockcontactinfos.git
 	ignore = dirty
 [submodule "modules/blockcurrencies"]
 	path = modules/blockcurrencies
-	url = https://github.com/thirtybees/blockcurrencies.git
+	url = https://github.com/therampagerado/blockcurrencies.git
 	ignore = dirty
 [submodule "modules/blockcustomerprivacy"]
 	path = modules/blockcustomerprivacy
-	url = https://github.com/thirtybees/blockcustomerprivacy.git
+	url = https://github.com/therampagerado/blockcustomerprivacy.git
 	ignore = dirty
 [submodule "modules/blockfacebook"]
 	path = modules/blockfacebook
-	url = https://github.com/thirtybees/blockfacebook.git
+	url = https://github.com/therampagerado/blockfacebook.git
 	ignore = dirty
 [submodule "modules/blocklanguages"]
 	path = modules/blocklanguages
-	url = https://github.com/thirtybees/blocklanguages.git
+	url = https://github.com/therampagerado/blocklanguages.git
 	ignore = dirty
 [submodule "modules/blocklayered"]
 	path = modules/blocklayered
-	url = https://github.com/thirtybees/blocklayered.git
+	url = https://github.com/therampagerado/blocklayered.git
 	ignore = dirty
 [submodule "modules/blocklink"]
 	path = modules/blocklink
-	url = https://github.com/thirtybees/blocklink.git
+	url = https://github.com/therampagerado/blocklink.git
 	ignore = dirty
 [submodule "modules/blockmanufacturer"]
 	path = modules/blockmanufacturer
-	url = https://github.com/thirtybees/blockmanufacturer.git
+	url = https://github.com/therampagerado/blockmanufacturer.git
 	ignore = dirty
 [submodule "modules/blockmyaccount"]
 	path = modules/blockmyaccount
-	url = https://github.com/thirtybees/blockmyaccount.git
+	url = https://github.com/therampagerado/blockmyaccount.git
 	ignore = dirty
 [submodule "modules/blockmyaccountfooter"]
 	path = modules/blockmyaccountfooter
-	url = https://github.com/thirtybees/blockmyaccountfooter.git
+	url = https://github.com/therampagerado/blockmyaccountfooter.git
 	ignore = dirty
 [submodule "modules/blocknewproducts"]
 	path = modules/blocknewproducts
-	url = https://github.com/thirtybees/blocknewproducts.git
+	url = https://github.com/therampagerado/blocknewproducts.git
 	ignore = dirty
 [submodule "modules/blocknewsletter"]
 	path = modules/blocknewsletter
-	url = https://github.com/thirtybees/blocknewsletter.git
+	url = https://github.com/therampagerado/blocknewsletter.git
 	ignore = dirty
 [submodule "modules/blockpaymentlogo"]
 	path = modules/blockpaymentlogo
-	url = https://github.com/thirtybees/blockpaymentlogo.git
+	url = https://github.com/therampagerado/blockpaymentlogo.git
 	ignore = dirty
 [submodule "modules/blockpermanentlinks"]
 	path = modules/blockpermanentlinks
-	url = https://github.com/thirtybees/blockpermanentlinks.git
+	url = https://github.com/therampagerado/blockpermanentlinks.git
 	ignore = dirty
 [submodule "modules/blockreinsurance"]
 	path = modules/blockreinsurance
-	url = https://github.com/thirtybees/blockreinsurance.git
+	url = https://github.com/therampagerado/blockreinsurance.git
 	ignore = dirty
 [submodule "modules/blocksearch"]
 	path = modules/blocksearch
-	url = https://github.com/thirtybees/blocksearch.git
+	url = https://github.com/therampagerado/blocksearch.git
 	ignore = dirty
 [submodule "modules/blocksharefb"]
 	path = modules/blocksharefb
-	url = https://github.com/thirtybees/blocksharefb.git
+	url = https://github.com/therampagerado/blocksharefb.git
 	ignore = dirty
 [submodule "modules/blocksocial"]
 	path = modules/blocksocial
-	url = https://github.com/thirtybees/blocksocial.git
+	url = https://github.com/therampagerado/blocksocial.git
 	ignore = dirty
 [submodule "modules/blockspecials"]
 	path = modules/blockspecials
-	url = https://github.com/thirtybees/blockspecials.git
+	url = https://github.com/therampagerado/blockspecials.git
 	ignore = dirty
 [submodule "modules/blockstore"]
 	path = modules/blockstore
-	url = https://github.com/thirtybees/blockstore.git
+	url = https://github.com/therampagerado/blockstore.git
 	ignore = dirty
 [submodule "modules/blocksupplier"]
 	path = modules/blocksupplier
-	url = https://github.com/thirtybees/blocksupplier.git
+	url = https://github.com/therampagerado/blocksupplier.git
 	ignore = dirty
 [submodule "modules/blocktags"]
 	path = modules/blocktags
-	url = https://github.com/thirtybees/blocktags.git
+	url = https://github.com/therampagerado/blocktags.git
 	ignore = dirty
 [submodule "modules/blocktopmenu"]
 	path = modules/blocktopmenu
-	url = https://github.com/thirtybees/blocktopmenu.git
+	url = https://github.com/therampagerado/blocktopmenu.git
 	ignore = dirty
 [submodule "modules/blockuserinfo"]
 	path = modules/blockuserinfo
-	url = https://github.com/thirtybees/blockuserinfo.git
+	url = https://github.com/therampagerado/blockuserinfo.git
 	ignore = dirty
 [submodule "modules/blockviewed"]
 	path = modules/blockviewed
-	url = https://github.com/thirtybees/blockviewed.git
+	url = https://github.com/therampagerado/blockviewed.git
 	ignore = dirty
 [submodule "modules/coreupdater"]
 	path = modules/coreupdater
-	url = https://github.com/thirtybees/coreupdater.git
+	url = https://github.com/therampagerado/coreupdater.git
 	ignore = dirty
 [submodule "modules/crossselling"]
 	path = modules/crossselling
-	url = https://github.com/thirtybees/crossselling.git
+	url = https://github.com/therampagerado/crossselling.git
 	ignore = dirty
 [submodule "modules/ctconfiguration"]
 	path = modules/ctconfiguration
-	url = https://github.com/thirtybees/ctconfiguration.git
+	url = https://github.com/therampagerado/ctconfiguration.git
 	ignore = dirty
 [submodule "modules/dashactivity"]
 	path = modules/dashactivity
-	url = https://github.com/thirtybees/dashactivity.git
+	url = https://github.com/therampagerado/dashactivity.git
 	ignore = dirty
 [submodule "modules/dashgoals"]
 	path = modules/dashgoals
-	url = https://github.com/thirtybees/dashgoals.git
+	url = https://github.com/therampagerado/dashgoals.git
 	ignore = dirty
 [submodule "modules/dashproducts"]
 	path = modules/dashproducts
-	url = https://github.com/thirtybees/dashproducts.git
+	url = https://github.com/therampagerado/dashproducts.git
 	ignore = dirty
 [submodule "modules/dashtrends"]
 	path = modules/dashtrends
-	url = https://github.com/thirtybees/dashtrends.git
+	url = https://github.com/therampagerado/dashtrends.git
 	ignore = dirty
 [submodule "modules/ecbexchange"]
 	path = modules/ecbexchange
-	url = https://github.com/thirtybees/ecbexchange
+	url = https://github.com/therampagerado/ecbexchange
 	ignore = dirty
 [submodule "modules/homefeatured"]
 	path = modules/homefeatured
-	url = https://github.com/thirtybees/homefeatured.git
+	url = https://github.com/therampagerado/homefeatured.git
 	ignore = dirty
 [submodule "modules/homeslider"]
 	path = modules/homeslider
-	url = https://github.com/thirtybees/homeslider.git
+	url = https://github.com/therampagerado/homeslider.git
 	ignore = dirty
 [submodule "modules/productpaymentlogos"]
 	path = modules/productpaymentlogos
-	url = https://github.com/thirtybees/productpaymentlogos.git
+	url = https://github.com/therampagerado/productpaymentlogos.git
 	ignore = dirty
 [submodule "modules/productscategory"]
 	path = modules/productscategory
-	url = https://github.com/thirtybees/productscategory.git
+	url = https://github.com/therampagerado/productscategory.git
 	ignore = dirty
 [submodule "modules/producttooltip"]
 	path = modules/producttooltip
-	url = https://github.com/thirtybees/producttooltip.git
+	url = https://github.com/therampagerado/producttooltip.git
 	ignore = dirty
 [submodule "modules/sendtoafriend"]
 	path = modules/sendtoafriend
-	url = https://github.com/thirtybees/sendtoafriend.git
+	url = https://github.com/therampagerado/sendtoafriend.git
 	ignore = dirty
 [submodule "modules/socialsharing"]
 	path = modules/socialsharing
-	url = https://github.com/thirtybees/socialsharing.git
+	url = https://github.com/therampagerado/socialsharing.git
 	ignore = dirty
 [submodule "modules/statsdata"]
 	path = modules/statsdata
-	url = https://github.com/thirtybees/statsdata.git
+	url = https://github.com/therampagerado/statsdata.git
 	ignore = dirty
 [submodule "modules/statsmodule"]
 	path = modules/statsmodule
-	url = https://github.com/thirtybees/statsmodule.git
+	url = https://github.com/therampagerado/statsmodule.git
 	ignore = dirty
 [submodule "modules/tbhtmlblock"]
 	path = modules/tbhtmlblock
-	url = https://github.com/thirtybees/tbhtmlblock.git
+	url = https://github.com/therampagerado/tbhtmlblock.git
 	ignore = dirty
 [submodule "modules/themeconfigurator"]
 	path = modules/themeconfigurator
-	url = https://github.com/thirtybees/themeconfigurator.git
+	url = https://github.com/therampagerado/themeconfigurator.git
 	ignore = dirty
 [submodule "modules/thememanager"]
 	path = modules/thememanager
-	url = https://github.com/thirtybees/thememanager.git
+	url = https://github.com/therampagerado/thememanager.git
 	ignore = dirty
 [submodule "modules/trackingfront"]
 	path = modules/trackingfront
-	url = https://github.com/thirtybees/trackingfront.git
+	url = https://github.com/therampagerado/trackingfront.git
 	ignore = dirty
 [submodule "modules/vatnumber"]
 	path = modules/vatnumber
-	url = https://github.com/thirtybees/vatnumber.git
+	url = https://github.com/therampagerado/vatnumber.git
 	ignore = dirty
 [submodule "themes/community-theme-default"]
 	path = themes/community-theme-default
-	url = https://github.com/thirtybees/community-theme-default.git
+	url = https://github.com/therampagerado/community-theme-default.git
 	branch = 1.1.x
 	ignore = dirty
 [submodule "themes/niara"]
 	path = themes/niara
-	url = https://github.com/thirtybees/niara.git
+	url = https://github.com/therampagerado/niara.git
 	ignore = dirty
 [submodule "modules/collectlogs"]
 	path = modules/collectlogs
-	url = https://github.com/thirtybees/collectlogs.git
+	url = https://github.com/therampagerado/collectlogs.git
