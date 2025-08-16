@@ -997,11 +997,19 @@ class CustomerCore extends ObjectModel
         $this->cleanGroups();
         $this->addGroups([Configuration::get('PS_CUSTOMER_GROUP')]); // add default customer group
         if ($this->update()) {
+            $context = Context::getContext();
+            $url = $context->link->getPageLink(
+                'password',
+                true,
+                null,
+                'token='.$this->secure_key.'&id_customer='.(int) $this->id
+            );
+
             $vars = [
                 '{firstname}' => $this->firstname,
                 '{lastname}'  => $this->lastname,
                 '{email}'     => $this->email,
-                '{passwd}'    => '*******',
+                '{url}'       => $url,
             ];
 
             Mail::Send(

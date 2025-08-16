@@ -8,9 +8,8 @@ account.
 
 E-MAIL ADDRESS: {email}
 
-PASSWORD: ******
-
-Please be careful when sharing these login details with others.
+To set your password, please use the following link:
+{url}
 
 You can access your customer account on our shop: {shop_url}
 
