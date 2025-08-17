@@ -203,6 +203,8 @@ class SpecificPriceRuleCore extends ObjectModel
 
                 // Add the conditions
                 foreach ($conditionGroup as $idCondition => $condition) {
+                    $negate = (float)$condition['value'] < 0;
+                    $value = (int)abs($condition['value']);
                     if ($condition['type'] == 'attribute') {
                         if (!$attributesJoinAdded) {
                             $query->select('pa.`id_product_attribute`')
@@ -212,28 +214,42 @@ class SpecificPriceRuleCore extends ObjectModel
                             $attributesJoinAdded = true;
                         }
 
-                        $query->leftJoin('product_attribute_combination', 'pac'.(int) $idCondition, 'pa.`id_product_attribute` = pac'.(int) $idCondition.'.`id_product_attribute`')
-                            ->where('pac'.(int) $idCondition.'.`id_attribute` = '.(int) $condition['value']);
+                        if ($negate) {
+                            $query->where('NOT EXISTS(SELECT 1 FROM `'._DB_PREFIX_.'product_attribute_combination` pac'.(int)$idCondition.' WHERE pa.`id_product_attribute` = pac'.(int)$idCondition.'.`id_product_attribute` AND pac'.(int)$idCondition.'.`id_attribute` = '.$value.')');
+                        } else {
+                            $query->leftJoin('product_attribute_combination', 'pac'.(int) $idCondition, 'pa.`id_product_attribute` = pac'.(int) $idCondition.'.`id_product_attribute`')
+                                ->where('pac'.(int) $idCondition.'.`id_attribute` = '.$value);
+                        }
                     } elseif ($condition['type'] == 'manufacturer') {
-                        $query->where('p.id_manufacturer = '.(int) $condition['value']);
+                        $query->where('p.id_manufacturer '.($negate ? '!=' : '=').' '.$value);
                     } elseif ($condition['type'] == 'category') {
-                        $query->leftJoin('category_product', 'cp'.(int) $idCondition, 'p.`id_product` = cp'.(int) $idCondition.'.`id_product`')
-                            ->where('cp'.(int) $idCondition.'.id_category = '.(int) $condition['value']);
+                        if ($negate) {
+                            $query->where('p.`id_product` NOT IN (SELECT id_product FROM `'._DB_PREFIX_.'category_product` cp'.$idCondition.' WHERE cp'.$idCondition.'.id_category = '.$value.')');
+                        } else {
+                            $query->leftJoin('category_product', 'cp'.(int) $idCondition, 'p.`id_product` = cp'.(int) $idCondition.'.`id_product`')
+                                ->where('cp'.(int) $idCondition.'.id_category = '.$value);
+                        }
                     } elseif ($condition['type'] == 'supplier') {
-                        $query->where(
-                            'EXISTS(
-							SELECT
-								`ps'.(int) $idCondition.'`.`id_product`
-							FROM
-								`'._DB_PREFIX_.'product_supplier` `ps'.(int) $idCondition.'`
-							WHERE
-								`p`.`id_product` = `ps'.(int) $idCondition.'`.`id_product`
-								AND `ps'.(int) $idCondition.'`.`id_supplier` = '.(int) $condition['value'].'
-						)'
-                        );
+                        if ($negate) {
+                            $query->where('NOT EXISTS(SELECT 1 FROM `'._DB_PREFIX_.'product_supplier` ps'.$idCondition.' WHERE `p`.`id_product` = ps'.$idCondition.'.`id_product` AND ps'.$idCondition.'.`id_supplier` = '.$value.')');
+                        } else {
+                            $query->where('EXISTS(
+                                                        SELECT
+                                                                `ps'.(int) $idCondition.'`.`id_product`
+                                                        FROM
+                                                                `'._DB_PREFIX_.'product_supplier` `ps'.(int) $idCondition.'`
+                                                        WHERE
+                                                                `p`.`id_product` = `ps'.(int) $idCondition.'`.`id_product`
+                                                                AND `ps'.(int) $idCondition.'`.`id_supplier` = '.$value.'
+                                                )');
+                        }
                     } elseif ($condition['type'] == 'feature') {
-                        $query->leftJoin('feature_product', 'fp'.(int) $idCondition, 'p.`id_product` = fp'.(int) $idCondition.'.`id_product`')
-                            ->where('fp'.(int) $idCondition.'.`id_feature_value` = '.(int) $condition['value']);
+                        if ($negate) {
+                            $query->where('p.`id_product` NOT IN (SELECT id_product FROM `'._DB_PREFIX_.'feature_product` fp'.$idCondition.' WHERE fp'.$idCondition.'.`id_feature_value` = '.$value.')');
+                        } else {
+                            $query->leftJoin('feature_product', 'fp'.(int) $idCondition, 'p.`id_product` = fp'.(int) $idCondition.'.`id_product`')
+                                ->where('fp'.(int) $idCondition.'.`id_feature_value` = '.$value);
+                        }
                     }
                 }
 

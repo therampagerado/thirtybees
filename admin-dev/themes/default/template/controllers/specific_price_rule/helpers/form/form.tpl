@@ -35,109 +35,134 @@
 <div class="clearfix">&nbsp;</div>
 <div class="panel" id="conditions-panel" style="display:none;">
 	<h3><i class="icon-tasks"></i> {l s='Conditions'}</h3>
-	<div class="form-group">
-		<label for="id_category" class="control-label col-lg-3">{l s='Category'}</label>
-		<div class="col-lg-9">
-			<div class="col-lg-8">
-				<select id="id_category" name="id_category">
-					{foreach from=$categories item='category'}
-					<option value="{$category.id_category|intval}">({$category.id_category|intval}) {$category.name}</option>
-					{/foreach}
-				</select>
-			</div>
-			<div class="col-lg-1">
-				<a class="btn btn-default" href="#" id="add_condition_category">
-					<i class="icon-plus-sign"></i> {l s='Add condition'}
-				</a>
-			</div>
-		</div>
-	</div>
-	<div class="form-group">
-		<label for="id_manufacturer" class="control-label col-lg-3">{l s='Manufacturer'}</label>
-		<div class="col-lg-9">
-			<div class="col-lg-8">
-				<select id="id_manufacturer" name="id_manufacturer">
-					{foreach from=$manufacturers item='manufacturer'}
-						<option value="{$manufacturer.id_manufacturer}">{$manufacturer.name}</option>
-					{/foreach}
-				</select>
-			</div>
-			<div class="col-lg-1">
-				<a class="btn btn-default" href="#" id="add_condition_manufacturer">
-					<i class="icon-plus-sign"></i> {l s='Add condition'}
-				</a>
-			</div>
-		</div>
-	</div>
-	<div class="form-group">
-		<label for="id_supplier" class="control-label col-lg-3">{l s='Supplier'}</label>
-		<div class="col-lg-9">
-			<div class="col-lg-8">
-				<select id="id_supplier" name="id_supplier">
-					{foreach from=$suppliers item='supplier'}
-						<option value="{$supplier.id_supplier}">{$supplier.name}</option>
-					{/foreach}
-				</select>
-			</div>
-			<div class="col-lg-1">
-				<a class="btn btn-default" href="#" id="add_condition_supplier">
-					<i class="icon-plus-sign"></i> {l s='Add condition'}
-				</a>
-			</div>
-		</div>
-	</div>
-	<div class="form-group">
-		<label for="id_attribute_group" class="control-label col-lg-3">{l s='Attributes'}</label>
-		<div class="col-lg-9">
-			<div class="col-lg-4">
-				<select id="id_attribute_group">
-					{foreach from=$attributes_group item='attribute_group'}
-						<option value="{$attribute_group.id_attribute_group}">{$attribute_group.name}</option>
-					{/foreach}
-				</select>
-			</div>
-			<div class="col-lg-4">
-				{foreach from=$attributes_group item='attribute_group'}
-					<select class="id_attribute" style="display:none;" id="id_attribute_{$attribute_group.id_attribute_group}">
-						{foreach from=$attribute_group.attributes item='attribute'}
-							<option value="{$attribute.id_attribute}">{$attribute.name}</option>
-						{/foreach}
-					</select>
-				{/foreach}
-			</div>
-			<div class="col-lg-1">
-				<a class="btn btn-default" href="#" id="add_condition_attribute">
-					<i class="icon-plus-sign"></i> {l s='Add condition'}
-				</a>
-			</div>
-		</div>
-	</div>
-	<div class="form-group">
-		<label for="id_feature" class="control-label col-lg-3">{l s='Features'}</label>
-		<div class="col-lg-9">
-			<div class="col-lg-4">
-				<select id="id_feature">
-					{foreach from=$features item='feature'}
-						<option value="{$feature.id_feature}">{$feature.name}</option>
-					{/foreach}
-				</select>
-			</div>
-			<div class="col-lg-4">
-				{foreach from=$features item='feature'}
-					<select class="id_feature_value" style="display:none;" id="id_feature_{$feature.id_feature}">
-						{foreach from=$feature.values item='value'}
-							<option value="{$value.id_feature_value}">{$value.value}</option>
-						{/foreach}
-					</select>
-				{/foreach}
-			</div>
-			<div class="col-lg-1">
-				<a class="btn btn-default" href="#" id="add_condition_feature">
-					<i class="icon-plus-sign"></i> {l s='Add condition'}
-				</a>
-			</div>
-		</div>
-	</div>
+        <div class="form-group">
+                <label for="id_category" class="control-label col-lg-3">{l s='Category'}</label>
+                <div class="col-lg-9">
+                        <div class="col-lg-7">
+                                <select id="id_category" name="id_category">
+                                        {foreach from=$categories item='category'}
+                                        <option value="{$category.id_category|intval}">({$category.id_category|intval}) {$category.name}</option>
+                                        {/foreach}
+                                </select>
+                        </div>
+                        <div class="col-lg-1">
+                                <div class="checkbox">
+                                        <label><input type="checkbox" id="id_category_not"> {l s='Exclude'}</label>
+                                </div>
+                        </div>
+                        <div class="col-lg-1">
+                                <a class="btn btn-default" href="#" id="add_condition_category">
+                                        <i class="icon-plus-sign"></i> {l s='Add condition'}
+                                </a>
+                        </div>
+                </div>
+        </div>
+        <div class="form-group">
+                <label for="id_manufacturer" class="control-label col-lg-3">{l s='Manufacturer'}</label>
+                <div class="col-lg-9">
+                        <div class="col-lg-7">
+                                <select id="id_manufacturer" name="id_manufacturer">
+                                        {foreach from=$manufacturers item='manufacturer'}
+                                                <option value="{$manufacturer.id_manufacturer}">{$manufacturer.name}</option>
+                                        {/foreach}
+                                </select>
+                        </div>
+                        <div class="col-lg-1">
+                                <div class="checkbox">
+                                        <label><input type="checkbox" id="id_manufacturer_not"> {l s='Exclude'}</label>
+                                </div>
+                        </div>
+                        <div class="col-lg-1">
+                                <a class="btn btn-default" href="#" id="add_condition_manufacturer">
+                                        <i class="icon-plus-sign"></i> {l s='Add condition'}
+                                </a>
+                        </div>
+                </div>
+        </div>
+        <div class="form-group">
+                <label for="id_supplier" class="control-label col-lg-3">{l s='Supplier'}</label>
+                <div class="col-lg-9">
+                        <div class="col-lg-7">
+                                <select id="id_supplier" name="id_supplier">
+                                        {foreach from=$suppliers item='supplier'}
+                                                <option value="{$supplier.id_supplier}">{$supplier.name}</option>
+                                        {/foreach}
+                                </select>
+                        </div>
+                        <div class="col-lg-1">
+                                <div class="checkbox">
+                                        <label><input type="checkbox" id="id_supplier_not"> {l s='Exclude'}</label>
+                                </div>
+                        </div>
+                        <div class="col-lg-1">
+                                <a class="btn btn-default" href="#" id="add_condition_supplier">
+                                        <i class="icon-plus-sign"></i> {l s='Add condition'}
+                                </a>
+                        </div>
+                </div>
+        </div>
+        <div class="form-group">
+                <label for="id_attribute_group" class="control-label col-lg-3">{l s='Attributes'}</label>
+                <div class="col-lg-9">
+                        <div class="col-lg-3">
+                                <select id="id_attribute_group">
+                                        {foreach from=$attributes_group item='attribute_group'}
+                                                <option value="{$attribute_group.id_attribute_group}">{$attribute_group.name}</option>
+                                        {/foreach}
+                                </select>
+                        </div>
+                        <div class="col-lg-4">
+                                {foreach from=$attributes_group item='attribute_group'}
+                                        <select class="id_attribute" style="display:none;" id="id_attribute_{$attribute_group.id_attribute_group}">
+                                                {foreach from=$attribute_group.attributes item='attribute'}
+                                                        <option value="{$attribute.id_attribute}">{$attribute.name}</option>
+                                                {/foreach}
+                                        </select>
+                                {/foreach}
+                        </div>
+                        <div class="col-lg-1">
+                                <div class="checkbox">
+                                        <label><input type="checkbox" id="id_attribute_not"> {l s='Exclude'}</label>
+                                </div>
+                        </div>
+                        <div class="col-lg-1">
+                                <a class="btn btn-default" href="#" id="add_condition_attribute">
+                                        <i class="icon-plus-sign"></i> {l s='Add condition'}
+                                </a>
+                        </div>
+                </div>
+        </div>
+        <div class="form-group">
+                <label for="id_feature" class="control-label col-lg-3">{l s='Features'}</label>
+                <div class="col-lg-9">
+                        <div class="col-lg-3">
+                                <select id="id_feature">
+                                        {foreach from=$features item='feature'}
+                                                <option value="{$feature.id_feature}">{$feature.name}</option>
+                                        {/foreach}
+                                </select>
+                        </div>
+                        <div class="col-lg-4">
+                                {foreach from=$features item='feature'}
+                                        <select class="id_feature_value" style="display:none;" id="id_feature_{$feature.id_feature}">
+                                                {foreach from=$feature.values item='value'}
+                                                        <option value="{$value.id_feature_value}">{$value.value}</option>
+                                                {/foreach}
+                                        </select>
+                                {/foreach}
+                        </div>
+                        <div class="col-lg-1">
+                                <div class="checkbox">
+                                        <label><input type="checkbox" id="id_feature_not"> {l s='Exclude'}</label>
+                                </div>
+                        </div>
+                        <div class="col-lg-1">
+                                <a class="btn btn-default" href="#" id="add_condition_feature">
+                                        <i class="icon-plus-sign"></i> {l s='Add condition'}
+                                </a>
+                        </div>
+                </div>
+        </div>
 {if !$is_multishop}
 	<input type="hidden" name="id_shop" value="1" />
 {/if}
@@ -233,60 +258,85 @@ $(document).ready(function() {
 		$('#id_attribute_'+$(this).val()).show();
 	});
 
-	$('#add_condition_category').click(function() {
-		var id_condition = add_condition(current_id_condition_group, 'category', $('#id_category option:selected').val());
-		if (!id_condition)
-			return false;
+        $('#add_condition_category').click(function() {
+                var negate = $('#id_category_not').is(':checked');
+                var value = $('#id_category option:selected').val();
+                if (negate) value = '-' + value;
+                var id_condition = add_condition(current_id_condition_group, 'category', value);
+                if (!id_condition)
+                        return false;
 
-		var html = '<tr id="'+id_condition+'"><td>{l s='Category'}</td><td>'+$('#id_category option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
-		appendConditionToGroup(html);
+                var prefix = negate ? '{l s='NOT' js=1} ' : '';
+                var html = '<tr id="'+id_condition+'"><td>{l s='Category'}</td><td>'+prefix+$('#id_category option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
+                appendConditionToGroup(html);
+                $('#id_category_not').prop('checked', false);
 
-		return false;
-	});
+                return false;
+        });
 
-	$('#add_condition_manufacturer').click(function() {
-		var id_condition = add_condition(current_id_condition_group, 'manufacturer', $('#id_manufacturer option:selected').val());
-		if (!id_condition)
-			return false;
+        $('#add_condition_manufacturer').click(function() {
+                var negate = $('#id_manufacturer_not').is(':checked');
+                var value = $('#id_manufacturer option:selected').val();
+                if (negate) value = '-' + value;
+                var id_condition = add_condition(current_id_condition_group, 'manufacturer', value);
+                if (!id_condition)
+                        return false;
 
-		var html = '<tr id="'+id_condition+'"><td>{l s='Manufacturer'}</td><td>'+$('#id_manufacturer option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
-		appendConditionToGroup(html);
+                var prefix = negate ? '{l s='NOT' js=1} ' : '';
+                var html = '<tr id="'+id_condition+'"><td>{l s='Manufacturer'}</td><td>'+prefix+$('#id_manufacturer option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
+                appendConditionToGroup(html);
+                $('#id_manufacturer_not').prop('checked', false);
 
-		return false;
-	});
+                return false;
+        });
 
-	$('#add_condition_supplier').click(function() {
-		var id_condition = add_condition(current_id_condition_group, 'supplier', $('#id_supplier option:selected').val());
-		if (!id_condition)
-			return false;
+        $('#add_condition_supplier').click(function() {
+                var negate = $('#id_supplier_not').is(':checked');
+                var value = $('#id_supplier option:selected').val();
+                if (negate) value = '-' + value;
+                var id_condition = add_condition(current_id_condition_group, 'supplier', value);
+                if (!id_condition)
+                        return false;
 
-		var html = '<tr id="'+id_condition+'"><td>{l s='Supplier'}</td><td>'+$('#id_supplier option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
-		appendConditionToGroup(html);
+                var prefix = negate ? '{l s='NOT' js=1} ' : '';
+                var html = '<tr id="'+id_condition+'"><td>{l s='Supplier'}</td><td>'+prefix+$('#id_supplier option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
+                appendConditionToGroup(html);
+                $('#id_supplier_not').prop('checked', false);
 
-		return false;
-	});
+                return false;
+        });
 
-	$('#add_condition_attribute').click(function() {
-		var id_condition = add_condition(current_id_condition_group, 'attribute', $('#id_attribute_'+$('#id_attribute_group option:selected').val()+' option:selected').val());
-		if (!id_condition)
-			return false;
+        $('#add_condition_attribute').click(function() {
+                var negate = $('#id_attribute_not').is(':checked');
+                var value = $('#id_attribute_'+$('#id_attribute_group option:selected').val()+' option:selected').val();
+                if (negate) value = '-' + value;
+                var id_condition = add_condition(current_id_condition_group, 'attribute', value);
+                if (!id_condition)
+                        return false;
 
-		var html = '<tr id="'+id_condition+'"><td>{l s='Attribute'}</td><td>'+$('#id_attribute_group option:selected').html()+': '+$('#id_attribute_'+$('#id_attribute_group option:selected').val()+' option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
-		appendConditionToGroup(html);
+                var prefix = negate ? '{l s='NOT' js=1} ' : '';
+                var html = '<tr id="'+id_condition+'"><td>{l s='Attribute'}</td><td>'+prefix+$('#id_attribute_group option:selected').html()+': '+$('#id_attribute_'+$('#id_attribute_group option:selected').val()+' option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
+                appendConditionToGroup(html);
+                $('#id_attribute_not').prop('checked', false);
 
-		return false;
-	});
+                return false;
+        });
 
-	$('#add_condition_feature').click(function() {
-		var id_condition = add_condition(current_id_condition_group, 'feature', $('#id_feature_'+$('#id_feature option:selected').val()+' option:selected').val());
-		if (!id_condition)
-			return false;
+        $('#add_condition_feature').click(function() {
+                var negate = $('#id_feature_not').is(':checked');
+                var value = $('#id_feature_'+$('#id_feature option:selected').val()+' option:selected').val();
+                if (negate) value = '-' + value;
+                var id_condition = add_condition(current_id_condition_group, 'feature', value);
+                if (!id_condition)
+                        return false;
 
-		var html = '<tr id="'+id_condition+'"><td>{l s='Feature'}</td><td>'+$('#id_feature option:selected').html()+': '+$('#id_feature_'+$('#id_feature option:selected').val()+' option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
-		appendConditionToGroup(html);
+                var prefix = negate ? '{l s='NOT' js=1} ' : '';
+                var html = '<tr id="'+id_condition+'"><td>{l s='Feature'}</td><td>'+prefix+$('#id_feature option:selected').html()+': '+$('#id_feature_'+$('#id_feature option:selected').val()+' option:selected').html()+'</td><td><a href="#" onclick="delete_condition(\''+id_condition+'\');" class="btn btn-default"><i class="icon-remove"></i> {l s='Delete'}</a></td></tr>';
+                appendConditionToGroup(html);
+                $('#id_feature_not').prop('checked', false);
 
-		return false;
-	});
+                return false;
+        });
 
 	$('#add_condition_group').click(function() {
 		new_condition_group();
@@ -299,21 +349,26 @@ $(document).ready(function() {
 		return false;
 	});
 
-	{foreach from=$conditions key='id_group_condition' item='condition_group'}
-		new_condition_group();
-		{foreach from=$condition_group item='condition'}
-			{if $condition.type == 'attribute'}
-				$('#id_attribute_group option[value="{$condition.id_attribute_group}"]').attr('selected', true);
-				$('#id_attribute_{$condition.id_attribute_group} option[value="{$condition.value}"]').attr('selected', true);
-			{elseif $condition.type == 'feature'}
-				$('#id_feature option[value="{$condition.id_feature}"]').attr('selected', true);
-				$('#id_feature_{$condition.id_feature} option[value="{$condition.value}"]').attr('selected', true);
-			{else}
-				$('#id_{$condition.type} option[value="{$condition.value}"]').attr('selected', true);
-			{/if}
-			$('#add_condition_{$condition.type}').click();
-		{/foreach}
-	{/foreach}
+        {foreach from=$conditions key='id_group_condition' item='condition_group'}
+                new_condition_group();
+                {foreach from=$condition_group item='condition'}
+                        var negate = {$condition.value} < 0;
+                        var val = Math.abs({$condition.value});
+                        {if $condition.type == 'attribute'}
+                                $('#id_attribute_group option[value="{$condition.id_attribute_group}"]').attr('selected', true);
+                                $('#id_attribute_{$condition.id_attribute_group} option[value="'+val+'"]').attr('selected', true);
+                                $('#id_attribute_not').prop('checked', negate);
+                        {elseif $condition.type == 'feature'}
+                                $('#id_feature option[value="{$condition.id_feature}"]').attr('selected', true);
+                                $('#id_feature_{$condition.id_feature} option[value="'+val+'"]').attr('selected', true);
+                                $('#id_feature_not').prop('checked', negate);
+                        {else}
+                                $('#id_{$condition.type} option[value="'+val+'"]').attr('selected', true);
+                                $('#id_{$condition.type}_not').prop('checked', negate);
+                        {/if}
+                        $('#add_condition_{$condition.type}').click();
+                {/foreach}
+        {/foreach}
 	$('#id_attribute_group').change();
 	$('#id_feature').change();
 });
