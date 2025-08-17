@@ -378,6 +378,40 @@ class AdminPerformanceControllerCore extends AdminController
         return ['form' => $form];
     }
 
+    protected function getThemeFontsForForm()
+    {
+        $fonts = [];
+        foreach ($this->getThemeFonts() as $font) {
+            $fonts[] = ['id' => md5($font), 'name' => $font];
+        }
+        return $fonts;
+    }
+
+    protected function getThemeFonts()
+    {
+        $fonts = [];
+        $dirs = glob(_PS_ALL_THEMES_DIR_.'*', GLOB_ONLYDIR);
+        if ($dirs) {
+            foreach ($dirs as $dir) {
+                $it = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS)
+                );
+                foreach ($it as $file) {
+                    if ($file->isFile() && preg_match('/\\.(woff2?|woff)$/i', $file->getFilename())) {
+                        $path = str_replace(_PS_ROOT_DIR_, '', $file->getPathname());
+                        $path = str_replace('\\\\', '/', $path);
+                        if ($path && $path[0] !== '/') {
+                            $path = '/' . $path;
+                        }
+                        $fonts[] = $path;
+                    }
+                }
+            }
+        }
+        sort($fonts);
+        return array_unique($fonts);
+    }
+
 
     /**
      * @return array
@@ -638,6 +672,36 @@ class AdminPerformanceControllerCore extends AdminController
                     ],
                 ],
                 [
+                    'type'    => 'switch',
+                    'label'   => $this->l('Enable preload for CSS/JS'),
+                    'name'    => 'TB_PRELOAD_ASSETS',
+                    'hint'    => $this->l('Adds <link rel="preload"> hints in <head> for CSS/JS already registered by thirty bees.'),
+                    'is_bool' => true,
+                    'values'  => [
+                        [
+                            'id'    => 'TB_PRELOAD_ASSETS_on',
+                            'value' => 1,
+                            'label' => $this->l('Yes'),
+                        ],
+                        [
+                            'id'    => 'TB_PRELOAD_ASSETS_off',
+                            'value' => 0,
+                            'label' => $this->l('No'),
+                        ],
+                    ],
+                ],
+                [
+                    'type'   => 'checkbox',
+                    'label'  => $this->l('Preload font URLs'),
+                    'name'   => 'TB_PRELOAD_FONT_URLS',
+                    'values' => [
+                        'query' => $this->getThemeFontsForForm(),
+                        'id'    => 'id',
+                        'name'  => 'name',
+                    ],
+                    'desc'   => $this->l('Absolute or theme-relative URLs to .woff2 fonts used above the fold. crossorigin is added automatically.'),
+                ],
+                [
 
                     'type'   => 'switch',
                     'label'  => $this->l('Apache optimization'),
@@ -673,6 +737,11 @@ class AdminPerformanceControllerCore extends AdminController
         $this->fields_value['PS_JS_HTML_THEME_COMPRESSION'] = Configuration::get('PS_JS_HTML_THEME_COMPRESSION');
         $this->fields_value['PS_HTACCESS_CACHE_CONTROL'] = Configuration::get('PS_HTACCESS_CACHE_CONTROL');
         $this->fields_value['PS_JS_DEFER'] = Configuration::get('PS_JS_DEFER');
+        $this->fields_value['TB_PRELOAD_ASSETS'] = Configuration::get('TB_PRELOAD_ASSETS');
+        $selectedFonts = preg_split('~\\R+~', (string)Configuration::get('TB_PRELOAD_FONT_URLS'), -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($this->getThemeFontsForForm() as $font) {
+            $this->fields_value['TB_PRELOAD_FONT_URLS_'.$font['id']] = in_array($font['name'], $selectedFonts) ? 1 : 0;
+        }
         $this->fields_value[Configuration::CCC_ASSETS_RETENTION_PERIOD] = Configuration::getCCCAssetsRetentionPeriod();
         $this->fields_value['ccc_up'] = 1;
 
@@ -1194,10 +1263,19 @@ class AdminPerformanceControllerCore extends AdminController
                     }
                 }
 
+                $fonts = [];
+                foreach ($this->getThemeFontsForForm() as $font) {
+                    if (Tools::getValue('TB_PRELOAD_FONT_URLS_'.$font['id'])) {
+                        $fonts[] = $font['name'];
+                    }
+                }
+
                 if (!Configuration::updateValue('PS_CSS_THEME_CACHE', Tools::getIntValue('PS_CSS_THEME_CACHE')) ||
                     !Configuration::updateValue('PS_JS_THEME_CACHE', Tools::getIntValue('PS_JS_THEME_CACHE')) ||
                     !Configuration::updateValue('PS_JS_HTML_THEME_COMPRESSION', Tools::getIntValue('PS_JS_HTML_THEME_COMPRESSION')) ||
                     !Configuration::updateValue('PS_JS_DEFER', Tools::getIntValue('PS_JS_DEFER')) ||
+                    !Configuration::updateValue('TB_PRELOAD_ASSETS', Tools::getIntValue('TB_PRELOAD_ASSETS')) ||
+                    !Configuration::updateValue('TB_PRELOAD_FONT_URLS', implode("\n", $fonts)) ||
                     !Configuration::updateValue(Configuration::CCC_ASSETS_RETENTION_PERIOD, Tools::getIntValue(Configuration::CCC_ASSETS_RETENTION_PERIOD)) ||
                     !Configuration::updateValue('PS_HTACCESS_CACHE_CONTROL', Tools::getIntValue('PS_HTACCESS_CACHE_CONTROL'))
                 ) {

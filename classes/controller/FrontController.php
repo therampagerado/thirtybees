@@ -491,6 +491,10 @@ class FrontControllerCore extends Controller
             }
         }
 
+        if ((int)Configuration::get('TB_PRELOAD_ASSETS')) {
+            $hookHeader = $this->buildPreloadLinks() . $hookHeader;
+        }
+
         // Call hook before assign of css_files and js_files in order to include correctly all css and javascript files
         $this->context->smarty->assign(
             [
@@ -511,6 +515,40 @@ class FrontControllerCore extends Controller
 
         $this->display_header = $display;
         $this->smartyOutputContent(_PS_THEME_DIR_.'header.tpl');
+    }
+
+    protected function buildPreloadLinks()
+    {
+        $out = '';
+
+        if (!empty($this->css_files) && is_array($this->css_files)) {
+            foreach ($this->css_files as $uri => $media) {
+                $out .= '<link rel="preload" as="style" href="'.Tools::safeOutput($uri).'">' . "\n";
+            }
+        }
+
+        if (!empty($this->js_files) && is_array($this->js_files)) {
+            foreach ($this->js_files as $uri) {
+                $out .= '<link rel="preload" as="script" href="'.Tools::safeOutput($uri).'">' . "\n";
+            }
+        }
+
+        $fonts = trim((string)Configuration::get('TB_PRELOAD_FONT_URLS'));
+        if ($fonts !== '') {
+            foreach (preg_split('~\\R+~', $fonts) as $font) {
+                $font = trim($font);
+                if ($font === '') {
+                    continue;
+                }
+                $type = (stripos($font, '.woff2') !== false) ? 'font/woff2' : 'font/woff';
+                if ($font[0] === '/' && strpos($font, '//') !== 1) {
+                    $font = Tools::getShopDomainSsl(true) . $font;
+                }
+                $out .= '<link rel="preload" as="font" type="'.$type.'" href="'.Tools::safeOutput($font).'" crossorigin>' . "\n";
+            }
+        }
+
+        return $out;
     }
 
     /**
@@ -799,6 +837,12 @@ class FrontControllerCore extends Controller
             if (Configuration::get('PS_JS_THEME_CACHE') && !$this->useMobileTheme()) {
                 $this->js_files = Media::cccJs($this->js_files);
             }
+        }
+
+        if ((int)Configuration::get('TB_PRELOAD_ASSETS')) {
+            $hookHeader = $this->context->smarty->getTemplateVars('HOOK_HEADER');
+            $hookHeader = $this->buildPreloadLinks() . $hookHeader;
+            $this->context->smarty->assign('HOOK_HEADER', $hookHeader);
         }
 
         // Get img_formats dynamically
