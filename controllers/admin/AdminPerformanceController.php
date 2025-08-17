@@ -48,6 +48,12 @@ class AdminPerformanceControllerCore extends AdminController
     const CACHE_REDIS = 'CacheRedis';
 
     /**
+     * Cached list of fonts detected in themes
+     * @var array|null
+     */
+    protected $preloadFontOptions;
+
+    /**
      * AdminPerformanceControllerCore constructor.
      *
      * @throws PrestaShopException
@@ -662,6 +668,43 @@ class AdminPerformanceControllerCore extends AdminController
                     'desc'  => $this->l('Number of days to keep old JS and CSS files on the server, to make sure e.g. Google\'s cache still renders it correctly. Enter zero if you don\'t want to keep old files'),
                     'name'   => Configuration::CCC_ASSETS_RETENTION_PERIOD,
                 ],
+                [
+                    'type'   => 'switch',
+                    'label'  => $this->l('Enable preload for CSS/JS'),
+                    'name'   => 'TB_PRELOAD_ASSETS',
+                    'is_bool' => true,
+                    'desc'   => $this->l('Adds <link rel="preload"> hints in <head> for CSS/JS already registered by thirty bees.'),
+                    'values' => [
+                        [
+                            'id'    => 'TB_PRELOAD_ASSETS_on',
+                            'value' => 1,
+                            'label' => $this->l('Yes'),
+                        ],
+                        [
+                            'id'    => 'TB_PRELOAD_ASSETS_off',
+                            'value' => 0,
+                            'label' => $this->l('No'),
+                        ],
+                    ],
+                ],
+                [
+                    'type'  => 'textarea',
+                    'label' => $this->l('Preload font URLs (one per line)'),
+                    'name'  => 'TB_PRELOAD_FONT_URLS',
+                    'rows'  => 4,
+                    'cols'  => 40,
+                    'desc'  => $this->l('Absolute or theme-relative URLs to .woff2 fonts used above the fold. crossorigin is added automatically.'),
+                ],
+                [
+                    'type'   => 'checkbox',
+                    'label'  => $this->l('Detected theme fonts'),
+                    'name'   => 'preload_font_detected',
+                    'values' => [
+                        'query' => $this->getPreloadFontOptions(),
+                        'id'    => 'id',
+                        'name'  => 'name',
+                    ],
+                ],
             ],
             'submit' => [
                 'title' => $this->l('Save'),
@@ -674,9 +717,57 @@ class AdminPerformanceControllerCore extends AdminController
         $this->fields_value['PS_HTACCESS_CACHE_CONTROL'] = Configuration::get('PS_HTACCESS_CACHE_CONTROL');
         $this->fields_value['PS_JS_DEFER'] = Configuration::get('PS_JS_DEFER');
         $this->fields_value[Configuration::CCC_ASSETS_RETENTION_PERIOD] = Configuration::getCCCAssetsRetentionPeriod();
+        $this->fields_value['TB_PRELOAD_ASSETS'] = Configuration::get('TB_PRELOAD_ASSETS');
+        $this->fields_value['TB_PRELOAD_FONT_URLS'] = Configuration::get('TB_PRELOAD_FONT_URLS');
+        $existingFonts = preg_split("/\r?\n/", (string) Configuration::get('TB_PRELOAD_FONT_URLS'), -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($this->getPreloadFontOptions() as $font) {
+            $this->fields_value['preload_font_detected_'.$font['id']] = in_array($font['val'], $existingFonts);
+        }
         $this->fields_value['ccc_up'] = 1;
 
         return ['form' => $form];
+    }
+
+    /**
+     * Get list of font files in all front-office themes
+     *
+     * @return array
+     */
+    protected function getPreloadFontOptions()
+    {
+        if ($this->preloadFontOptions !== null) {
+            return $this->preloadFontOptions;
+        }
+
+        $fonts = [];
+        foreach (Theme::getThemes() as $theme) {
+            $themeDir = _PS_ALL_THEMES_DIR_.$theme->directory.'/';
+            if (!is_dir($themeDir)) {
+                continue;
+            }
+            $iterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($themeDir, \RecursiveDirectoryIterator::FOLLOW_SYMLINKS),
+                \RecursiveIteratorIterator::LEAVES_ONLY
+            );
+            foreach ($iterator as $file) {
+                /** @var \SplFileInfo $file */
+                if ($file->isDir()) {
+                    continue;
+                }
+                if (!preg_match('/\.(woff2?|ttf|otf)$/i', $file->getFilename())) {
+                    continue;
+                }
+                $relative = '/'.str_replace(_PS_ROOT_DIR_.'/', '', $file->getPathname());
+                $id = md5($relative);
+                $fonts[$id] = [
+                    'id'  => $id,
+                    'name'=> $relative,
+                    'val' => $relative,
+                ];
+            }
+        }
+
+        return $this->preloadFontOptions = array_values($fonts);
     }
 
     /**
@@ -1194,12 +1285,23 @@ class AdminPerformanceControllerCore extends AdminController
                     }
                 }
 
+                $manualFonts = preg_split("/\r?\n/", Tools::getValue('TB_PRELOAD_FONT_URLS'), -1, PREG_SPLIT_NO_EMPTY);
+                $selectedFonts = [];
+                foreach ($this->getPreloadFontOptions() as $font) {
+                    if (Tools::getValue('preload_font_detected_'.$font['id'])) {
+                        $selectedFonts[] = $font['val'];
+                    }
+                }
+                $fontValue = implode("\n", array_unique(array_merge($manualFonts, $selectedFonts)));
+
                 if (!Configuration::updateValue('PS_CSS_THEME_CACHE', Tools::getIntValue('PS_CSS_THEME_CACHE')) ||
                     !Configuration::updateValue('PS_JS_THEME_CACHE', Tools::getIntValue('PS_JS_THEME_CACHE')) ||
                     !Configuration::updateValue('PS_JS_HTML_THEME_COMPRESSION', Tools::getIntValue('PS_JS_HTML_THEME_COMPRESSION')) ||
                     !Configuration::updateValue('PS_JS_DEFER', Tools::getIntValue('PS_JS_DEFER')) ||
                     !Configuration::updateValue(Configuration::CCC_ASSETS_RETENTION_PERIOD, Tools::getIntValue(Configuration::CCC_ASSETS_RETENTION_PERIOD)) ||
-                    !Configuration::updateValue('PS_HTACCESS_CACHE_CONTROL', Tools::getIntValue('PS_HTACCESS_CACHE_CONTROL'))
+                    !Configuration::updateValue('PS_HTACCESS_CACHE_CONTROL', Tools::getIntValue('PS_HTACCESS_CACHE_CONTROL')) ||
+                    !Configuration::updateValue('TB_PRELOAD_ASSETS', Tools::getIntValue('TB_PRELOAD_ASSETS')) ||
+                    !Configuration::updateValue('TB_PRELOAD_FONT_URLS', $fontValue)
                 ) {
                     $this->errors[] = Tools::displayError('Unknown error.');
                 } else {
