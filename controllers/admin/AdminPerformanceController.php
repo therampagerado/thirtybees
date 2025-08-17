@@ -666,17 +666,55 @@ class AdminPerformanceControllerCore extends AdminController
                 ],
                 [
                     'type'   => 'switch',
-                    'label'  => $this->l('Enable preload for CSS/JS'),
-                    'name'   => 'TB_PRELOAD_ASSETS',
-                    'desc'   => $this->l('Adds <link rel="preload"> hints in <head> for CSS/JS already registered by thirty bees.'),
+                    'label'  => $this->l('Preload combined CSS'),
+                    'name'   => 'TB_PRELOAD_CSS',
+                    'desc'   => $this->l('Adds <link rel="preload"> hint for the combined CSS file.'),
+                    'disabled' => !Configuration::get('PS_CSS_THEME_CACHE'),
                     'values' => [
                         [
-                            'id'    => 'TB_PRELOAD_ASSETS_1',
+                            'id'    => 'TB_PRELOAD_CSS_1',
                             'value' => 1,
                             'label' => $this->l('Yes'),
                         ],
                         [
-                            'id'    => 'TB_PRELOAD_ASSETS_0',
+                            'id'    => 'TB_PRELOAD_CSS_0',
+                            'value' => 0,
+                            'label' => $this->l('No'),
+                        ],
+                    ],
+                ],
+                [
+                    'type'   => 'switch',
+                    'label'  => $this->l('Preload combined JavaScript'),
+                    'name'   => 'TB_PRELOAD_JS',
+                    'desc'   => $this->l('Adds <link rel="preload"> hint for the combined JavaScript file.'),
+                    'disabled' => !Configuration::get('PS_JS_THEME_CACHE'),
+                    'values' => [
+                        [
+                            'id'    => 'TB_PRELOAD_JS_1',
+                            'value' => 1,
+                            'label' => $this->l('Yes'),
+                        ],
+                        [
+                            'id'    => 'TB_PRELOAD_JS_0',
+                            'value' => 0,
+                            'label' => $this->l('No'),
+                        ],
+                    ],
+                ],
+                [
+                    'type'   => 'switch',
+                    'label'  => $this->l('Preload fonts'),
+                    'name'   => 'TB_PRELOAD_FONTS',
+                    'desc'   => $this->l('Adds <link rel="preload"> hints for selected font files.'),
+                    'values' => [
+                        [
+                            'id'    => 'TB_PRELOAD_FONTS_1',
+                            'value' => 1,
+                            'label' => $this->l('Yes'),
+                        ],
+                        [
+                            'id'    => 'TB_PRELOAD_FONTS_0',
                             'value' => 0,
                             'label' => $this->l('No'),
                         ],
@@ -685,7 +723,7 @@ class AdminPerformanceControllerCore extends AdminController
                 [
                     'type'   => 'checkbox',
                     'label'  => $this->l('Preload font URLs'),
-                    'name'   => 'TB_PRELOAD_FONTS',
+                    'name'   => 'TB_PRELOAD_FONT_LIST',
                     'values' => [
                         'query' => $fonts,
                         'id'    => 'id',
@@ -713,12 +751,14 @@ class AdminPerformanceControllerCore extends AdminController
         $this->fields_value['PS_HTACCESS_CACHE_CONTROL'] = Configuration::get('PS_HTACCESS_CACHE_CONTROL');
         $this->fields_value['PS_JS_DEFER'] = Configuration::get('PS_JS_DEFER');
         $this->fields_value[Configuration::CCC_ASSETS_RETENTION_PERIOD] = Configuration::getCCCAssetsRetentionPeriod();
-        $this->fields_value['TB_PRELOAD_ASSETS'] = Configuration::get('TB_PRELOAD_ASSETS');
+        $this->fields_value['TB_PRELOAD_CSS'] = Configuration::get('TB_PRELOAD_CSS');
+        $this->fields_value['TB_PRELOAD_JS'] = Configuration::get('TB_PRELOAD_JS');
+        $this->fields_value['TB_PRELOAD_FONTS'] = Configuration::get('TB_PRELOAD_FONTS');
         $configuredFonts = trim((string)Configuration::get('TB_PRELOAD_FONT_URLS'));
         $configuredFonts = $configuredFonts !== '' ? preg_split('~\R+~', $configuredFonts) : [];
         foreach ($fonts as $font) {
             if (in_array($font['uri'], $configuredFonts)) {
-                $this->fields_value['TB_PRELOAD_FONTS_'.$font['id']] = true;
+                $this->fields_value['TB_PRELOAD_FONT_LIST_'.$font['id']] = true;
             }
         }
         $this->fields_value['TB_PRELOAD_FONT_URLS'] = implode("\n", $configuredFonts);
@@ -729,18 +769,29 @@ class AdminPerformanceControllerCore extends AdminController
 
     protected function getPreloadFonts()
     {
+        $themes = [];
+        if (Shop::isFeatureActive()) {
+            foreach (Shop::getShops(true, null, true) as $idShop) {
+                $shop = new Shop($idShop);
+                $themes[$shop->getTheme()] = true;
+            }
+        } else {
+            $themes[_THEME_NAME_] = true;
+        }
+
         $fonts = [];
-        foreach (scandir(_PS_ALL_THEMES_DIR_) as $theme) {
-            if ($theme[0] === '.' || !is_dir(_PS_ALL_THEMES_DIR_.$theme)) {
+        foreach (array_keys($themes) as $theme) {
+            $themeDir = _PS_ALL_THEMES_DIR_.$theme.'/' ;
+            if (!is_dir($themeDir)) {
                 continue;
             }
-            $themeDir = _PS_ALL_THEMES_DIR_.$theme.'/';
             foreach (Tools::scandir($themeDir, '', '', true) as $file) {
                 if (preg_match('~\.(?:woff2|woff)$~i', $file)) {
                     $fonts[] = '/themes/'.$theme.'/'.$file;
                 }
             }
         }
+
         $fonts = array_unique($fonts);
         sort($fonts);
         $options = [];
@@ -1272,7 +1323,7 @@ class AdminPerformanceControllerCore extends AdminController
                 $fonts = $this->getPreloadFonts();
                 $selectedFonts = [];
                 foreach ($fonts as $font) {
-                    if (Tools::getValue('TB_PRELOAD_FONTS_'.$font['id'])) {
+                    if (Tools::getValue('TB_PRELOAD_FONT_LIST_'.$font['id'])) {
                         $selectedFonts[] = $font['uri'];
                     }
                 }
@@ -1293,7 +1344,9 @@ class AdminPerformanceControllerCore extends AdminController
                     !Configuration::updateValue('PS_JS_DEFER', Tools::getIntValue('PS_JS_DEFER')) ||
                     !Configuration::updateValue(Configuration::CCC_ASSETS_RETENTION_PERIOD, Tools::getIntValue(Configuration::CCC_ASSETS_RETENTION_PERIOD)) ||
                     !Configuration::updateValue('PS_HTACCESS_CACHE_CONTROL', Tools::getIntValue('PS_HTACCESS_CACHE_CONTROL')) ||
-                    !Configuration::updateValue('TB_PRELOAD_ASSETS', Tools::getIntValue('TB_PRELOAD_ASSETS')) ||
+                    !Configuration::updateValue('TB_PRELOAD_CSS', Tools::getIntValue('TB_PRELOAD_CSS')) ||
+                    !Configuration::updateValue('TB_PRELOAD_JS', Tools::getIntValue('TB_PRELOAD_JS')) ||
+                    !Configuration::updateValue('TB_PRELOAD_FONTS', Tools::getIntValue('TB_PRELOAD_FONTS')) ||
                     !Configuration::updateValue('TB_PRELOAD_FONT_URLS', $fontConfig)
                 ) {
                     $this->errors[] = Tools::displayError('Unknown error.');

@@ -320,10 +320,6 @@ class FrontControllerCore extends Controller
             $extraCss = $extraCode[Configuration::CUSTOMCODE_CSS] ? '<style>'.$extraCode[Configuration::CUSTOMCODE_CSS].'</style>' : '';
             $hookHeader .= $extraCode[Configuration::CUSTOMCODE_METAS].$extraCss;
 
-            if ((int)Configuration::get('TB_PRELOAD_ASSETS')) {
-                $hookHeader = $this->buildPreloadLinks().$hookHeader;
-            }
-
             $this->context->smarty->assign([
                 'HOOK_HEADER'       => $hookHeader,
                 'HOOK_TOP'          => Hook::displayHook('displayTop'),
@@ -494,7 +490,7 @@ class FrontControllerCore extends Controller
                 $this->js_files = Media::cccJs($this->js_files);
             }
         }
-        if ((int)Configuration::get('TB_PRELOAD_ASSETS')) {
+        if (Configuration::get('TB_PRELOAD_CSS') || Configuration::get('TB_PRELOAD_JS') || Configuration::get('TB_PRELOAD_FONTS')) {
             $hookHeader = $this->buildPreloadLinks().$hookHeader;
         }
 
@@ -610,28 +606,30 @@ class FrontControllerCore extends Controller
     protected function buildPreloadLinks()
     {
         $out = '';
-        if (!empty($this->css_files) && is_array($this->css_files)) {
+        if (Configuration::get('TB_PRELOAD_CSS') && Configuration::get('PS_CSS_THEME_CACHE') && !empty($this->css_files) && is_array($this->css_files)) {
             foreach ($this->css_files as $uri => $media) {
                 $out .= '<link rel="preload" as="style" href="'.Tools::safeOutput($uri).'">' . "\n";
             }
         }
-        if (!empty($this->js_files) && is_array($this->js_files)) {
+        if (Configuration::get('TB_PRELOAD_JS') && Configuration::get('PS_JS_THEME_CACHE') && !empty($this->js_files) && is_array($this->js_files)) {
             foreach ($this->js_files as $uri) {
                 $out .= '<link rel="preload" as="script" href="'.Tools::safeOutput($uri).'">' . "\n";
             }
         }
-        $fonts = trim((string)Configuration::get('TB_PRELOAD_FONT_URLS'));
-        if ($fonts !== '') {
-            foreach (preg_split('~\R+~', $fonts) as $font) {
-                $font = trim($font);
-                if ($font === '') {
-                    continue;
+        if (Configuration::get('TB_PRELOAD_FONTS')) {
+            $fonts = trim((string)Configuration::get('TB_PRELOAD_FONT_URLS'));
+            if ($fonts !== '') {
+                foreach (preg_split('~\R+~', $fonts) as $font) {
+                    $font = trim($font);
+                    if ($font === '') {
+                        continue;
+                    }
+                    $type = (stripos($font, '.woff2') !== false) ? 'font/woff2' : 'font/woff';
+                    if ($font[0] === '/' && strpos($font, '//') !== 1) {
+                        $font = Tools::getShopDomainSsl(true).$font;
+                    }
+                    $out .= '<link rel="preload" as="font" type="'.$type.'" href="'.Tools::safeOutput($font).'" crossorigin>' . "\n";
                 }
-                $type = (stripos($font, '.woff2') !== false) ? 'font/woff2' : 'font/woff';
-                if ($font[0] === '/' && strpos($font, '//') !== 1) {
-                    $font = Tools::getShopDomainSsl(true).$font;
-                }
-                $out .= '<link rel="preload" as="font" type="'.$type.'" href="'.Tools::safeOutput($font).'" crossorigin>' . "\n";
             }
         }
         return $out;
@@ -836,6 +834,11 @@ class FrontControllerCore extends Controller
             if (Configuration::get('PS_JS_THEME_CACHE') && !$this->useMobileTheme()) {
                 $this->js_files = Media::cccJs($this->js_files);
             }
+        }
+
+        if (Configuration::get('TB_PRELOAD_CSS') || Configuration::get('TB_PRELOAD_JS') || Configuration::get('TB_PRELOAD_FONTS')) {
+            $existing = (string)$this->context->smarty->getTemplateVars('HOOK_HEADER');
+            $this->context->smarty->assign('HOOK_HEADER', $this->buildPreloadLinks().$existing);
         }
 
         // Get img_formats dynamically
