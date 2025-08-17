@@ -47,6 +47,9 @@ class AdminPerformanceControllerCore extends AdminController
     const CACHE_APCU = 'CacheApcu';
     const CACHE_REDIS = 'CacheRedis';
 
+    /** @var array|null cached list of fonts available for preloading */
+    protected $preloadFonts = null;
+
     /**
      * AdminPerformanceControllerCore constructor.
      *
@@ -114,6 +117,7 @@ class AdminPerformanceControllerCore extends AdminController
             $this->initFieldsetDatabase(),
             $this->initFieldsetFeaturesDetachables(),
             $this->initFieldsetCCC(),
+            $this->initFieldsetPreload(),
             $this->initFieldsetMediaServer(),
             $this->initFieldsetCiphering(),
             $this->initFieldsetCaching(),
@@ -684,6 +688,115 @@ class AdminPerformanceControllerCore extends AdminController
      *
      * @throws PrestaShopException
      */
+    public function initFieldsetPreload()
+    {
+        $fonts = $this->getPreloadFonts();
+        $fontValues = [];
+        foreach ($fonts as $id => $path) {
+            $fontValues[] = ['id' => $id, 'name' => $path];
+        }
+
+        $form = [
+            'legend' => [
+                'title' => $this->l('Asset preloading'),
+                'icon'  => 'icon-bolt',
+            ],
+            'input'  => [
+                [
+                    'type' => 'hidden',
+                    'name' => 'preload_up',
+                ],
+                [
+                    'type'    => 'switch',
+                    'label'   => $this->l('Enable preload for CSS/JS'),
+                    'name'    => 'TB_PRELOAD_ASSETS',
+                    'is_bool' => true,
+                    'values'  => [
+                        [
+                            'id'    => 'TB_PRELOAD_ASSETS_on',
+                            'value' => 1,
+                            'label' => $this->l('Yes'),
+                        ],
+                        [
+                            'id'    => 'TB_PRELOAD_ASSETS_off',
+                            'value' => 0,
+                            'label' => $this->l('No'),
+                        ],
+                    ],
+                    'desc'    => $this->l('Adds <link rel="preload"> hints in <head> for CSS/JS already registered by thirty bees.'),
+                ],
+            ],
+            'submit' => [
+                'title' => $this->l('Save'),
+            ],
+        ];
+
+        if ($fontValues) {
+            $form['input'][] = [
+                'type'   => 'checkbox',
+                'label'  => $this->l('Preload font files'),
+                'name'   => 'TB_PRELOAD_FONT_URLS',
+                'values' => [
+                    'query' => $fontValues,
+                    'id'    => 'id',
+                    'name'  => 'name',
+                ],
+                'desc'   => $this->l('crossorigin is added automatically.'),
+            ];
+        }
+
+        $this->fields_value['TB_PRELOAD_ASSETS'] = Configuration::get('TB_PRELOAD_ASSETS');
+        $this->fields_value['preload_up'] = 1;
+        $selectedFonts = preg_split('~\R+~', (string) Configuration::get('TB_PRELOAD_FONT_URLS'), -1, PREG_SPLIT_NO_EMPTY);
+        foreach ($fonts as $id => $path) {
+            $this->fields_value['TB_PRELOAD_FONT_URLS_'.$id] = in_array($path, $selectedFonts, true);
+        }
+
+        return ['form' => $form];
+    }
+
+    /**
+     * @return array
+     */
+    protected function getPreloadFonts()
+    {
+        if ($this->preloadFonts !== null) {
+            return $this->preloadFonts;
+        }
+
+        $fonts = [];
+        foreach (scandir(_PS_ALL_THEMES_DIR_) as $theme) {
+            if ($theme[0] === '.' || !is_dir(_PS_ALL_THEMES_DIR_.$theme)) {
+                continue;
+            }
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator(_PS_ALL_THEMES_DIR_.$theme, RecursiveDirectoryIterator::SKIP_DOTS)
+            );
+            foreach ($iterator as $file) {
+                /** @var SplFileInfo $file */
+                if (!$file->isFile()) {
+                    continue;
+                }
+                $ext = strtolower($file->getExtension());
+                if ($ext !== 'woff' && $ext !== 'woff2') {
+                    continue;
+                }
+                $path = '/' . ltrim(str_replace(_PS_ROOT_DIR_, '', $file->getPathname()), '/');
+                $path = str_replace('\\', '/', $path);
+                $id = 'font_' . md5($path);
+                $fonts[$id] = $path;
+            }
+        }
+        ksort($fonts);
+
+        return $this->preloadFonts = $fonts;
+    }
+
+    /**
+     * @return array
+     *
+     * @throws PrestaShopException
+     */
     public function initFieldsetMediaServer()
     {
         $form = [
@@ -1216,6 +1329,22 @@ class AdminPerformanceControllerCore extends AdminController
                         }
                     }
                 }
+            } else {
+                $this->errors[] = Tools::displayError('You do not have permission to edit this.');
+            }
+        }
+
+        if (Tools::getValue('preload_up')) {
+            if ($this->hasEditPermission()) {
+                Configuration::updateValue('TB_PRELOAD_ASSETS', Tools::getIntValue('TB_PRELOAD_ASSETS'));
+                $selected = [];
+                foreach ($this->getPreloadFonts() as $id => $path) {
+                    if (Tools::getValue('TB_PRELOAD_FONT_URLS_' . $id)) {
+                        $selected[] = $path;
+                    }
+                }
+                Configuration::updateValue('TB_PRELOAD_FONT_URLS', implode("\n", $selected));
+                $redirectAdmin = true;
             } else {
                 $this->errors[] = Tools::displayError('You do not have permission to edit this.');
             }
