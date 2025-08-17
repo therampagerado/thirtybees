@@ -320,6 +320,10 @@ class FrontControllerCore extends Controller
             $extraCss = $extraCode[Configuration::CUSTOMCODE_CSS] ? '<style>'.$extraCode[Configuration::CUSTOMCODE_CSS].'</style>' : '';
             $hookHeader .= $extraCode[Configuration::CUSTOMCODE_METAS].$extraCss;
 
+            if ((int)Configuration::get('TB_PRELOAD_ASSETS')) {
+                $hookHeader = $this->buildPreloadLinks().$hookHeader;
+            }
+
             $this->context->smarty->assign([
                 'HOOK_HEADER'       => $hookHeader,
                 'HOOK_TOP'          => Hook::displayHook('displayTop'),
@@ -490,6 +494,9 @@ class FrontControllerCore extends Controller
                 $this->js_files = Media::cccJs($this->js_files);
             }
         }
+        if ((int)Configuration::get('TB_PRELOAD_ASSETS')) {
+            $hookHeader = $this->buildPreloadLinks().$hookHeader;
+        }
 
         // Call hook before assign of css_files and js_files in order to include correctly all css and javascript files
         $this->context->smarty->assign(
@@ -598,6 +605,36 @@ class FrontControllerCore extends Controller
         }
 
         return $layout;
+    }
+
+    protected function buildPreloadLinks()
+    {
+        $out = '';
+        if (!empty($this->css_files) && is_array($this->css_files)) {
+            foreach ($this->css_files as $uri => $media) {
+                $out .= '<link rel="preload" as="style" href="'.Tools::safeOutput($uri).'">' . "\n";
+            }
+        }
+        if (!empty($this->js_files) && is_array($this->js_files)) {
+            foreach ($this->js_files as $uri) {
+                $out .= '<link rel="preload" as="script" href="'.Tools::safeOutput($uri).'">' . "\n";
+            }
+        }
+        $fonts = trim((string)Configuration::get('TB_PRELOAD_FONT_URLS'));
+        if ($fonts !== '') {
+            foreach (preg_split('~\R+~', $fonts) as $font) {
+                $font = trim($font);
+                if ($font === '') {
+                    continue;
+                }
+                $type = (stripos($font, '.woff2') !== false) ? 'font/woff2' : 'font/woff';
+                if ($font[0] === '/' && strpos($font, '//') !== 1) {
+                    $font = Tools::getShopDomainSsl(true).$font;
+                }
+                $out .= '<link rel="preload" as="font" type="'.$type.'" href="'.Tools::safeOutput($font).'" crossorigin>' . "\n";
+            }
+        }
+        return $out;
     }
 
     /**
