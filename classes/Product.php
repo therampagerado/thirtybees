@@ -344,6 +344,16 @@ class ProductCore extends ObjectModel implements InitializationCallback
     public $id_product_redirected = 0;
 
     /**
+     * @var int
+     */
+    public $id_category_redirected = 0;
+
+    /**
+     * @var string
+     */
+    public $redirect_target = 'product';
+
+    /**
      * @var bool Product available for order
      */
     public $available_for_order = true;
@@ -520,6 +530,8 @@ class ProductCore extends ObjectModel implements InitializationCallback
             'active'                    => ['type' => self::TYPE_BOOL, 'shop' => true, 'validate' => 'isBool', 'dbDefault' => '0'],
             'redirect_type'             => ['type' => self::TYPE_STRING, 'shop' => true, 'validate' => 'isString', 'values' => ['', '404', '301', '302'], 'dbDefault' => ''],
             'id_product_redirected'     => ['type' => self::TYPE_INT, 'shop' => true, 'validate' => 'isUnsignedId', 'dbDefault' => '0'],
+            'redirect_target'           => ['type' => self::TYPE_STRING, 'shop' => true, 'validate' => 'isString', 'values' => ['product', 'category', 'category_default', 'home'], 'dbDefault' => 'product'],
+            'id_category_redirected'    => ['type' => self::TYPE_INT, 'shop' => true, 'validate' => 'isUnsignedId', 'dbDefault' => '0'],
             'available_for_order'       => ['type' => self::TYPE_BOOL, 'shop' => true, 'validate' => 'isBool', 'dbType' => 'tinyint(1)', 'dbDefault' => '1'],
             'available_date'            => ['type' => self::TYPE_DATE, 'shop' => true, 'validate' => 'isDateFormat', 'dbDefault' => '1970-01-01', 'dbType' => 'date'],
             'condition'                 => ['type' => self::TYPE_STRING, 'shop' => true, 'validate' => 'isGenericName', 'values' => ['new', 'used', 'refurbished'], 'default' => 'new'],
@@ -4166,10 +4178,14 @@ class ProductCore extends ObjectModel implements InitializationCallback
         if ($this->active) {
             //case where active will be false after parent::toggleStatus()
             $this->id_product_redirected = 0;
+            $this->id_category_redirected = 0;
+            $this->redirect_target = 'product';
             $this->redirect_type = '404';
         } else {
             //case where active will be true after parent::toggleStatus()
             $this->id_product_redirected = 0;
+            $this->id_category_redirected = 0;
+            $this->redirect_target = 'product';
             $this->redirect_type = '';
         }
 
@@ -8204,7 +8220,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
             $table->reorderColumns([
                 'id_product', 'id_shop', 'id_category_default', 'id_tax_rules_group', 'on_sale', 'online_only', 'ecotax',
                 'minimal_quantity', 'price', 'wholesale_price', 'unity', 'unit_price_ratio', 'additional_shipping_cost',
-                'customizable', 'uploadable_files', 'text_fields', 'active', 'redirect_type', 'id_product_redirected',
+                'customizable', 'uploadable_files', 'text_fields', 'active', 'redirect_type', 'id_product_redirected', 'redirect_target', 'id_category_redirected',
                 'available_for_order', 'available_date', 'condition', 'show_price', 'indexed', 'visibility',
                 'cache_default_attribute', 'advanced_stock_management', 'date_add', 'date_upd', 'pack_stock_type'
             ]);
