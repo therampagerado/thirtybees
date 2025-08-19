@@ -30,7 +30,9 @@
     <field name="text_fields"/>
     <field name="active"/>
     <field name="redirect_type"/>
+    <field name="redirect_target"/>
     <field name="id_product_redirected"/>
+    <field name="id_category_redirected"/>
     <field name="available_for_order"/>
     <field name="available_date"/>
     <field name="condition"/>

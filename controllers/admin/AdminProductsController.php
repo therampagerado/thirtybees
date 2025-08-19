@@ -4727,10 +4727,18 @@ class AdminProductsControllerCore extends AdminController
         $this->object = $product;
         //$this->display = 'edit';
         $data->assign('product_name_redirected', Product::getProductName((int) $product->id_product_redirected, null, (int) $this->context->language->id));
+        $categoryName = '';
+        if ($product->id_category_redirected) {
+            $infos = Category::getCategoryInformations([$product->id_category_redirected], $this->context->language->id);
+            if (!empty($infos[$product->id_category_redirected])) {
+                $categoryName = $infos[$product->id_category_redirected]['name'];
+            }
+        }
+        $data->assign('category_name_redirected', $categoryName);
 
         $productProps = [];
         // global informations
-        array_push($productProps, 'reference', 'ean13', 'upc', 'available_for_order', 'show_price', 'online_only', 'id_manufacturer');
+        array_push($productProps, 'reference', 'ean13', 'upc', 'available_for_order', 'show_price', 'online_only', 'id_manufacturer', 'redirect_type', 'redirect_target', 'id_product_redirected', 'id_category_redirected');
 
         // specific / detailled information
         array_push(

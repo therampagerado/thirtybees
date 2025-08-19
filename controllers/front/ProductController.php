@@ -134,19 +134,39 @@ class ProductControllerCore extends FrontController
                     $this->context->smarty->assign('adminActionDisplay', true);
                 } else {
                     $this->context->smarty->assign('adminActionDisplay', false);
-                    if (!$this->product->id_product_redirected || $this->product->id_product_redirected == $this->product->id) {
+                    if (
+                        ($this->product->redirect_target == 'product' && (!$this->product->id_product_redirected || $this->product->id_product_redirected == $this->product->id))
+                        || ($this->product->redirect_target == 'category' && !$this->product->id_category_redirected)
+                    ) {
                         $this->product->redirect_type = '404';
                     }
 
                     switch ($this->product->redirect_type) {
                         case '301':
-                            header('HTTP/1.1 301 Moved Permanently');
-                            header('Location: '.$this->context->link->getProductLink($this->product->id_product_redirected));
-                            exit;
                         case '302':
-                            header('HTTP/1.1 302 Moved Temporarily');
-                            header('Cache-Control: no-cache');
-                            header('Location: '.$this->context->link->getProductLink($this->product->id_product_redirected));
+                            $url = '';
+                            switch ($this->product->redirect_target) {
+                                case 'home':
+                                    $url = $this->context->link->getPageLink('index');
+                                    break;
+                                case 'category_default':
+                                    $url = $this->context->link->getCategoryLink($this->product->id_category_default);
+                                    break;
+                                case 'category':
+                                    $url = $this->context->link->getCategoryLink($this->product->id_category_redirected);
+                                    break;
+                                case 'product':
+                                default:
+                                    $url = $this->context->link->getProductLink($this->product->id_product_redirected);
+                                    break;
+                            }
+                            if ($this->product->redirect_type == '301') {
+                                header('HTTP/1.1 301 Moved Permanently');
+                            } else {
+                                header('HTTP/1.1 302 Moved Temporarily');
+                                header('Cache-Control: no-cache');
+                            }
+                            header('Location: '.$url);
                             exit;
                         case '404':
                         default:

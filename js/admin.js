@@ -547,9 +547,14 @@ function showRedirectProductOptions(show) {
 
 function redirectSelectChange() {
   if ($('#redirect_type :selected').val() == '404') {
-    showRedirectProductSelectOptions(false);
+    $('.redirect_product_options_product_choise').hide();
+    $('.redirect_category_options').hide();
+    $('#redirect_target').closest('.form-group').hide();
+    removeRelatedProduct();
+    removeRedirectCategory();
   } else {
-    showRedirectProductSelectOptions(true);
+    $('#redirect_target').closest('.form-group').show();
+    redirectTargetChange();
   }
 }
 
@@ -570,14 +575,42 @@ function removeRelatedProduct() {
   $('#related_product_autocomplete_input').parent().fadeIn();
 }
 
-function showRedirectProductSelectOptions(show) {
-  if (show) {
-    $('.redirect_product_options_product_choise').show();
-  } else {
-    $('.redirect_product_options_product_choise').hide();
-    removeRelatedProduct();
+function addRedirectCategory(id_category_to_add, category_name) {
+  if (!id_category_to_add) {
+    return;
   }
+  $('#redirect_category_name').html(category_name);
+  $('input[name=id_category_redirected]').val(id_category_to_add);
+  $('#redirect_category_autocomplete_input').parent().hide();
+  $('#redirect_category_remove').show();
+}
 
+function removeRedirectCategory() {
+  $('#redirect_category_name').html(no_redirect_category);
+  $('input[name=id_category_redirected]').val(0);
+  $('#redirect_category_remove').hide();
+  $('#redirect_category_autocomplete_input').parent().fadeIn();
+}
+
+function redirectTargetChange() {
+  switch ($('#redirect_target :selected').val()) {
+    case 'product':
+      $('.redirect_category_options').hide();
+      removeRedirectCategory();
+      $('.redirect_product_options_product_choise').show();
+      break;
+    case 'category':
+      $('.redirect_product_options_product_choise').hide();
+      removeRelatedProduct();
+      $('.redirect_category_options').show();
+      break;
+    default:
+      $('.redirect_product_options_product_choise').hide();
+      removeRelatedProduct();
+      $('.redirect_category_options').hide();
+      removeRedirectCategory();
+      break;
+  }
 }
 
 function showOptions(show) {
