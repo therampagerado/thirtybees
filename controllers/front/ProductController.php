@@ -140,13 +140,29 @@ class ProductControllerCore extends FrontController
 
                     switch ($this->product->redirect_type) {
                         case '301':
-                            header('HTTP/1.1 301 Moved Permanently');
-                            header('Location: '.$this->context->link->getProductLink($this->product->id_product_redirected));
-                            exit;
                         case '302':
-                            header('HTTP/1.1 302 Moved Temporarily');
-                            header('Cache-Control: no-cache');
-                            header('Location: '.$this->context->link->getProductLink($this->product->id_product_redirected));
+                            $link = $this->context->link;
+                            switch ($this->product->redirect_target) {
+                                case 'home':
+                                    $url = $link->getPageLink('index', true);
+                                    break;
+                                case 'category':
+                                    $url = $link->getCategoryLink($this->product->id_category_redirected);
+                                    break;
+                                case 'default':
+                                    $url = $link->getCategoryLink($this->product->id_category_default);
+                                    break;
+                                case 'product':
+                                default:
+                                    $url = $link->getProductLink($this->product->id_product_redirected);
+                            }
+                            if ($this->product->redirect_type == '301') {
+                                header('HTTP/1.1 301 Moved Permanently');
+                            } else {
+                                header('HTTP/1.1 302 Moved Temporarily');
+                                header('Cache-Control: no-cache');
+                            }
+                            header('Location: '.$url);
                             exit;
                         case '404':
                         default:

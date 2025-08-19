@@ -1247,11 +1247,19 @@ window.product_tabs.Informations = new function () {
     if ($('#active_on').prop('checked')) {
       window.showRedirectProductOptions(false);
       window.showRedirectProductSelectOptions(false);
+      window.showRedirectCategorySelectOptions(false);
     } else {
       window.showRedirectProductOptions(true);
     }
 
     $('#redirect_type').change(function () {
+      window.redirectSelectChange();
+    });
+
+    $('#redirect_target').change(function () {
+      if ($(this).val() === 'default') {
+        $('input[name=id_category_redirected]').val(id_default_category);
+      }
       window.redirectSelectChange();
     });
 
@@ -1274,6 +1282,30 @@ window.product_tabs.Informations = new function () {
         $(this).val('');
       });
     window.addRelatedProduct(window.id_product_redirected, window.product_name_redirected);
+
+    $('#related_category_autocomplete_input')
+      .autocomplete('ajax_categories_list.php', {
+        minChars: 1,
+        autoFill: true,
+        max: 20,
+        matchContains: true,
+        mustMatch: false,
+        scroll: false,
+        cacheLength: 0,
+        formatItem: function (item) {
+          return item[0];
+        }
+      }).result(function (e, i) {
+        if (typeof i !== 'undefined') {
+          window.addRelatedCategory(i[1], i[0]);
+        }
+        $(this).val('');
+      });
+    window.addRelatedCategory(window.id_category_redirected, window.category_name_redirected);
+
+    if ($('#redirect_target').val() === 'default') {
+      $('input[name=id_category_redirected]').val(id_default_category);
+    }
   };
 
   this.bindTagImage = function () {
