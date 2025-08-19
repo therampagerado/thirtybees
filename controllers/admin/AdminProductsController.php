@@ -4726,7 +4726,15 @@ class AdminProductsControllerCore extends AdminController
         );
         $this->object = $product;
         //$this->display = 'edit';
-        $data->assign('product_name_redirected', Product::getProductName((int) $product->id_product_redirected, null, (int) $this->context->language->id));
+        if ($product->redirect_type === 'category' || $product->redirect_type === 'category_default') {
+            $idCategory = $product->redirect_type === 'category' ? (int) $product->id_product_redirected : (int) $product->id_category_default;
+            $category = new Category($idCategory, (int) $this->context->language->id);
+            $data->assign('category_name_redirected', $category->name);
+            $data->assign('product_name_redirected', '');
+        } else {
+            $data->assign('product_name_redirected', Product::getProductName((int) $product->id_product_redirected, null, (int) $this->context->language->id));
+            $data->assign('category_name_redirected', '');
+        }
 
         $productProps = [];
         // global informations

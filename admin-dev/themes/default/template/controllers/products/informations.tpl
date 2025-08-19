@@ -243,52 +243,81 @@
 			{l s='Redirect when disabled'}
 		</label>
 		<div class="col-lg-5">
-			<select name="redirect_type" id="redirect_type">
-				<option value="404" {if $product->redirect_type == '404'} selected="selected" {/if}>{l s='No redirect (404)'}</option>
-				<option value="301" {if $product->redirect_type == '301'} selected="selected" {/if}>{l s='Redirected permanently (301)'}</option>
-				<option value="302" {if $product->redirect_type == '302'} selected="selected" {/if}>{l s='Redirected temporarily (302)'}</option>
-			</select>
-		</div>
-	</div>
+                        <select name="redirect_type" id="redirect_type">
+                                <option value="404" {if $product->redirect_type == '404'} selected="selected" {/if}>{l s='No redirect (404)'}</option>
+                                <option value="301" {if $product->redirect_type == '301'} selected="selected" {/if}>{l s='Redirected permanently (301)'}</option>
+                                <option value="302" {if $product->redirect_type == '302'} selected="selected" {/if}>{l s='Redirected temporarily (302)'}</option>
+                                <option value="home" {if $product->redirect_type == 'home'} selected="selected" {/if}>{l s='Redirect to homepage'}</option>
+                                <option value="category_default" {if $product->redirect_type == 'category_default'} selected="selected" {/if}>{l s='Redirect to default category'}</option>
+                                <option value="category" {if $product->redirect_type == 'category'} selected="selected" {/if}>{l s='Redirect to specific category'}</option>
+                        </select>
+                </div>
+        </div>
 	<div class="form-group redirect_product_options" style="display:none">
 		<div class="col-lg-9 col-lg-offset-3">
 			<div class="alert alert-info">
 				{l s='404 Not Found = Do not redirect and display a 404 page.'}<br/>
-				{l s='301 Moved Permanently = Permanently display another product instead.'}<br/>
-				{l s='302 Moved Temporarily = Temporarily display another product instead.'}
-			</div>
-		</div>
-	</div>
+                                {l s='301 Moved Permanently = Permanently display another product instead.'}<br/>
+                                {l s='302 Moved Temporarily = Temporarily display another product instead.'}
+                        </div>
+                </div>
+        </div>
 
-	<div class="form-group redirect_product_options redirect_product_options_product_choise" style="display:none">
-		<div class="col-lg-1"><span class="pull-right">{include file="controllers/products/multishop/checkbox.tpl" field="id_product_redirected" type="radio" onclick=""}</span></div>
-		<label class="control-label col-lg-2" for="related_product_autocomplete_input">
-			{l s='Related product:'}
-		</label>
-		<div class="col-lg-7">
-			<input type="hidden" value="" name="id_product_redirected" />
+        <div class="form-group redirect_product_options redirect_product_options_product_choise" style="display:none">
+                <div class="col-lg-1"><span class="pull-right">{include file="controllers/products/multishop/checkbox.tpl" field="id_product_redirected" type="radio" onclick=""}</span></div>
+                <label class="control-label col-lg-2" for="related_product_autocomplete_input">
+                        {l s='Related product:'}
+                </label>
+                <div class="col-lg-7">
+                        <input type="hidden" value="" name="id_product_redirected" />
 
-			<div class="input-group">
-				<input type="text" id="related_product_autocomplete_input" name="related_product_autocomplete_input" autocomplete="off" class="ac_input" />
-				<span class="input-group-addon"><i class="icon-search"></i></span>
-			</div>
+                        <div class="input-group">
+                                <input type="text" id="related_product_autocomplete_input" name="related_product_autocomplete_input" autocomplete="off" class="ac_input" />
+                                <span class="input-group-addon"><i class="icon-search"></i></span>
+                        </div>
 
-			<div class="form-control-static">
-				<span id="related_product_name"><i class="icon-warning-sign"></i>&nbsp;{l s='No related product.'}</span>
-				<span id="related_product_remove" style="display:none">
-					<a class="btn btn-default" href="#" onclick="removeRelatedProduct(); return false" id="related_product_remove_link">
-						<i class="icon-remove text-danger"></i>
-					</a>
-				</span>
-			</div>
+                        <div class="form-control-static">
+                                <span id="related_product_name"><i class="icon-warning-sign"></i>&nbsp;{l s='No related product.'}</span>
+                                <span id="related_product_remove" style="display:none">
+                                        <a class="btn btn-default" href="#" onclick="removeRelatedProduct(); return false" id="related_product_remove_link">
+                                                <i class="icon-remove text-danger"></i>
+                                        </a>
+                                </span>
+                        </div>
 
-		</div>
-		<script>
-			var no_related_product = '{l s='No related product'}';
-			var id_product_redirected = {$product->id_product_redirected|intval};
-			var product_name_redirected = '{$product_name_redirected|escape:'html':'UTF-8'}';
-		</script>
-	</div>
+                </div>
+        </div>
+
+        <div class="form-group redirect_product_options redirect_product_options_category_choise" style="display:none">
+                <div class="col-lg-1"><span class="pull-right">{include file="controllers/products/multishop/checkbox.tpl" field="id_product_redirected" type="radio" onclick=""}</span></div>
+                <label class="control-label col-lg-2" for="related_category_autocomplete_input">
+                        {l s='Related category:'}
+                </label>
+                <div class="col-lg-7">
+                        <div class="input-group">
+                                <input type="text" id="related_category_autocomplete_input" name="related_category_autocomplete_input" autocomplete="off" class="ac_input" />
+                                <span class="input-group-addon"><i class="icon-search"></i></span>
+                        </div>
+
+                        <div class="form-control-static">
+                                <span id="related_category_name"><i class="icon-warning-sign"></i>&nbsp;{l s='No related category'}</span>
+                                <span id="related_category_remove" style="display:none">
+                                        <a class="btn btn-default" href="#" onclick="removeRelatedCategory(); return false" id="related_category_remove_link">
+                                                <i class="icon-remove text-danger"></i>
+                                        </a>
+                                </span>
+                        </div>
+
+                </div>
+        </div>
+
+        <script>
+                var no_related_product = '{l s='No related product'}';
+                var id_product_redirected = {$product->id_product_redirected|intval};
+                var product_name_redirected = '{$product_name_redirected|escape:'html':'UTF-8'}';
+                var category_name_redirected = '{$category_name_redirected|escape:'html':'UTF-8'}';
+                var no_related_category = '{l s='No related category'}';
+        </script>
 
 	<div class="form-group">
 		<div class="col-lg-1"><span class="pull-right">{include file="controllers/products/multishop/checkbox.tpl" field="visibility" type="default"}</span></div>

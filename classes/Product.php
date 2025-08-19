@@ -518,7 +518,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
             'uploadable_files'          => ['type' => self::TYPE_INT, 'shop' => true, 'validate' => 'isUnsignedInt', 'dbType' => 'tinyint(4)', 'dbDefault' => '0'],
             'text_fields'               => ['type' => self::TYPE_INT, 'shop' => true, 'validate' => 'isUnsignedInt', 'dbType' => 'tinyint(4)', 'dbDefault' => '0'],
             'active'                    => ['type' => self::TYPE_BOOL, 'shop' => true, 'validate' => 'isBool', 'dbDefault' => '0'],
-            'redirect_type'             => ['type' => self::TYPE_STRING, 'shop' => true, 'validate' => 'isString', 'values' => ['', '404', '301', '302'], 'dbDefault' => ''],
+            'redirect_type'             => ['type' => self::TYPE_STRING, 'shop' => true, 'validate' => 'isString', 'values' => ['', '404', '301', '302', 'home', 'category', 'category_default'], 'dbDefault' => ''],
             'id_product_redirected'     => ['type' => self::TYPE_INT, 'shop' => true, 'validate' => 'isUnsignedId', 'dbDefault' => '0'],
             'available_for_order'       => ['type' => self::TYPE_BOOL, 'shop' => true, 'validate' => 'isBool', 'dbType' => 'tinyint(1)', 'dbDefault' => '1'],
             'available_date'            => ['type' => self::TYPE_DATE, 'shop' => true, 'validate' => 'isDateFormat', 'dbDefault' => '1970-01-01', 'dbType' => 'date'],

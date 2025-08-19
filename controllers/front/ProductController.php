@@ -148,6 +148,25 @@ class ProductControllerCore extends FrontController
                             header('Cache-Control: no-cache');
                             header('Location: '.$this->context->link->getProductLink($this->product->id_product_redirected));
                             exit;
+                        case 'home':
+                            header('HTTP/1.1 302 Moved Temporarily');
+                            header('Cache-Control: no-cache');
+                            header('Location: '.$this->context->link->getPageLink('index'));
+                            exit;
+                        case 'category':
+                            $idCategory = (int) $this->product->id_product_redirected;
+                            if (!$idCategory) {
+                                $idCategory = (int) $this->product->id_category_default;
+                            }
+                            header('HTTP/1.1 302 Moved Temporarily');
+                            header('Cache-Control: no-cache');
+                            header('Location: '.$this->context->link->getCategoryLink($idCategory));
+                            exit;
+                        case 'category_default':
+                            header('HTTP/1.1 302 Moved Temporarily');
+                            header('Cache-Control: no-cache');
+                            header('Location: '.$this->context->link->getCategoryLink($this->product->id_category_default));
+                            exit;
                         case '404':
                         default:
                             header('HTTP/1.1 404 Not Found');
