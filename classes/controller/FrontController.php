@@ -1232,7 +1232,12 @@ class FrontControllerCore extends Controller
         }
 
         if (Tools::getIntValue('n') && in_array(Tools::getIntValue('n'), $nArray)) {
-            $this->n = Tools::getIntValue('n');
+            $requested = (int) Tools::getIntValue('n');
+            if ((int) $totalProducts > 0 && $requested === (int) $totalProducts) {
+                $this->initAjaxShowAll($totalProducts, $defaultProductsPerPage);
+            } else {
+                $this->n = $requested;
+            }
         }
 
         // Retrieve the page number (either the GET parameter or the first page)
@@ -1279,6 +1284,34 @@ class FrontControllerCore extends Controller
                 'current_url'       => $currentUrl,
             ]
         );
+    }
+
+    /**
+     * Initialize asynchronous loading of products when "show all" is requested.
+     *
+     * @param int $totalProducts
+     * @param int $defaultProductsPerPage
+     */
+    protected function initAjaxShowAll($totalProducts, $defaultProductsPerPage)
+    {
+        $this->n = $defaultProductsPerPage;
+        $pagesNb = (int) ceil($totalProducts / $this->n);
+        $link = $this->context->link->getPaginationLink(false, false, $this->n, false, 1, false);
+        $link .= (strpos($link, '?') === false ? '?' : '&') . 'ajax=1&action=ProductList';
+
+        Media::addJsDef([
+            'tbAutoLoad' => [
+                'url'      => $link,
+                'chunk'    => $this->n,
+                'loaded'   => $this->n,
+                'total'    => (int) $totalProducts,
+                'threshold'=> 1000,
+                'minChunk' => max(4, (int) floor($this->n / 2)),
+                'container'=> '#product_list',
+            ],
+        ]);
+
+        $this->addJS(_PS_JS_DIR_ . 'front/product-show-all.js');
     }
 
     /**

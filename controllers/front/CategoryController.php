@@ -336,5 +336,20 @@ class CategoryControllerCore extends FrontController
         return null;
     }
 
+    /**
+     * Render additional products for AJAX pagination.
+     *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    public function displayAjaxProductList()
+    {
+        $this->assignProductList();
+        $this->context->smarty->assign([
+            'products'    => $this->cat_products,
+            'nb_products' => $this->nbProducts,
+        ]);
+        $this->ajaxRender($this->context->smarty->fetch(_PS_THEME_DIR_ . 'product-list.tpl'));
+    }
 }
 
