@@ -628,7 +628,7 @@ class AdminCustomersControllerCore extends AdminController
                     'label'   => $this->l('Default customer group'),
                     'name'    => 'id_default_group',
                     'options' => [
-                        'query' => $groups,
+                        'query' => [],
                         'id'    => 'id_group',
                         'name'  => 'name',
                     ],
@@ -736,6 +736,19 @@ class AdminCustomersControllerCore extends AdminController
             $customerGroupsIds = array_merge($customerGroupsIds, $preselected);
         }
 
+        $defaultGroups = [];
+        foreach ($groups as $group) {
+            if (in_array($group['id_group'], $customerGroupsIds)) {
+                $defaultGroups[] = $group;
+            }
+        }
+        foreach ($this->fields_form['input'] as &$input) {
+            if ($input['type'] === 'select' && $input['name'] === 'id_default_group') {
+                $input['options']['query'] = $defaultGroups;
+                break;
+            }
+        }
+
         foreach ($groups as $group) {
             $this->fields_value['groupBox_'.$group['id_group']] =
                 Tools::getValue('groupBox_'.$group['id_group'], in_array($group['id_group'], $customerGroupsIds));
@@ -752,6 +765,7 @@ class AdminCustomersControllerCore extends AdminController
     {
         parent::setMedia();
         $this->addJqueryPlugin(['typewatch', 'fancybox']);
+        $this->addJS(_PS_JS_DIR_.'admin/customers.js');
     }
 
     /**
@@ -1361,6 +1375,55 @@ class AdminCustomersControllerCore extends AdminController
             }
             $this->ajaxDie('ok');
         }
+    }
+
+    /**
+     * Update customer groups
+     *
+     * @return void
+     *
+     * @throws PrestaShopException
+     */
+    public function ajaxProcessUpdateCustomerGroups()
+    {
+        if (!$this->hasEditPermission()) {
+            $this->ajaxDie('error:update');
+        }
+
+        $idCustomer = Tools::getIntValue('id_customer');
+        $groupIds = Tools::getValue('groupBox');
+        if (!is_array($groupIds)) {
+            $groupIds = [];
+        } else {
+            $groupIds = array_map('intval', $groupIds);
+        }
+
+        $customer = new Customer($idCustomer);
+        if (!Validate::isLoadedObject($customer)) {
+            $this->ajaxDie('error:load');
+        }
+
+        if (!in_array($customer->id_default_group, $groupIds)) {
+            $groupIds[] = (int) $customer->id_default_group;
+        }
+
+        $customer->updateGroup($groupIds);
+
+        $groups = [];
+        $allGroups = Group::getGroups($this->context->language->id, true);
+        foreach ($allGroups as $group) {
+            if (in_array($group['id_group'], $groupIds)) {
+                $groups[] = [
+                    'id_group' => (int) $group['id_group'],
+                    'name'     => $group['name'],
+                ];
+            }
+        }
+
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        $this->ajaxDie(json_encode(['groups' => $groups]));
     }
 
     /**
