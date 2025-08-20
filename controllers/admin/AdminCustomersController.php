@@ -736,6 +736,17 @@ class AdminCustomersControllerCore extends AdminController
             $customerGroupsIds = array_merge($customerGroupsIds, $preselected);
         }
 
+        // Filter default group options to only associated groups
+        foreach ($this->fields_form['input'] as &$input) {
+            if (isset($input['name']) && $input['name'] === 'id_default_group') {
+                $input['options']['query'] = array_values(array_filter($groups, function ($group) use ($customerGroupsIds) {
+                    return in_array($group['id_group'], $customerGroupsIds);
+                }));
+                break;
+            }
+        }
+        unset($input);
+
         foreach ($groups as $group) {
             $this->fields_value['groupBox_'.$group['id_group']] =
                 Tools::getValue('groupBox_'.$group['id_group'], in_array($group['id_group'], $customerGroupsIds));
@@ -752,6 +763,13 @@ class AdminCustomersControllerCore extends AdminController
     {
         parent::setMedia();
         $this->addJqueryPlugin(['typewatch', 'fancybox']);
+
+        if ($this->display == 'edit' || $this->display == 'add') {
+            $this->addJS(_PS_JS_DIR_.'admin/customers.js');
+            Media::addJsDef([
+                'updateCustomerGroupsUrl' => $this->context->link->getAdminLink('AdminCustomers', true).'&ajax=1&action=updateCustomerGroups',
+            ]);
+        }
     }
 
     /**
@@ -1361,6 +1379,39 @@ class AdminCustomersControllerCore extends AdminController
             }
             $this->ajaxDie('ok');
         }
+    }
+
+    /**
+     * Update customer groups via ajax
+     *
+     * @return void
+     *
+     * @throws PrestaShopException
+     */
+    public function ajaxProcessUpdateCustomerGroups()
+    {
+        $idCustomer = Tools::getIntValue('id_customer');
+        $groupIds = Tools::getArrayValue('groupBox', []);
+
+        $customer = new Customer($idCustomer);
+        if (!Validate::isLoadedObject($customer)) {
+            $this->ajaxDie(json_encode(['error' => true]));
+        }
+
+        $customer->updateGroup($groupIds);
+
+        $groups = Group::getGroups($this->context->language->id, true);
+        $filtered = [];
+        foreach ($groups as $group) {
+            if (in_array($group['id_group'], $groupIds)) {
+                $filtered[] = $group;
+            }
+        }
+
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        $this->ajaxDie(json_encode(['error' => false, 'groups' => $filtered]));
     }
 
     /**
