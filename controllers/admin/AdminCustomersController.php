@@ -461,6 +461,37 @@ class AdminCustomersControllerCore extends AdminController
         $days = Tools::dateDays();
 
         $groups = Group::getGroups($this->context->language->id, true);
+
+        // determine groups associated with the customer
+        if (!Validate::isUnsignedId($obj->id)) {
+            $customerGroups = [];
+        } else {
+            $customerGroups = $obj->getGroups();
+        }
+        $customerGroupsIds = [];
+        if (is_array($customerGroups)) {
+            foreach ($customerGroups as $customerGroup) {
+                $customerGroupsIds[] = $customerGroup;
+            }
+        }
+        // if empty : object creation, set default groups
+        if (empty($customerGroupsIds)) {
+            $preselected = [
+                Configuration::get('PS_UNIDENTIFIED_GROUP'),
+                Configuration::get('PS_GUEST_GROUP'),
+                Configuration::get('PS_CUSTOMER_GROUP'),
+            ];
+            $customerGroupsIds = array_merge($customerGroupsIds, $preselected);
+        }
+
+        // prepare list of groups available for default group select
+        $defaultGroups = [];
+        foreach ($groups as $group) {
+            if (in_array($group['id_group'], $customerGroupsIds)) {
+                $defaultGroups[] = $group;
+            }
+        }
+
         $this->fields_form = [
             'legend' => [
                 'title' => $this->l('Customer'),
@@ -628,7 +659,7 @@ class AdminCustomersControllerCore extends AdminController
                     'label'   => $this->l('Default customer group'),
                     'name'    => 'id_default_group',
                     'options' => [
-                        'query' => $groups,
+                        'query' => $defaultGroups,
                         'id'    => 'id_group',
                         'name'  => 'name',
                     ],
@@ -718,24 +749,6 @@ class AdminCustomersControllerCore extends AdminController
         ];
 
         // Added values of object Group
-        if (!Validate::isUnsignedId($obj->id)) {
-            $customerGroups = [];
-        } else {
-            $customerGroups = $obj->getGroups();
-        }
-        $customerGroupsIds = [];
-        if (is_array($customerGroups)) {
-            foreach ($customerGroups as $customerGroup) {
-                $customerGroupsIds[] = $customerGroup;
-            }
-        }
-
-        // if empty $carrier_groups_ids : object creation : we set the default groups
-        if (empty($customerGroupsIds)) {
-            $preselected = [Configuration::get('PS_UNIDENTIFIED_GROUP'), Configuration::get('PS_GUEST_GROUP'), Configuration::get('PS_CUSTOMER_GROUP')];
-            $customerGroupsIds = array_merge($customerGroupsIds, $preselected);
-        }
-
         foreach ($groups as $group) {
             $this->fields_value['groupBox_'.$group['id_group']] =
                 Tools::getValue('groupBox_'.$group['id_group'], in_array($group['id_group'], $customerGroupsIds));
@@ -752,6 +765,7 @@ class AdminCustomersControllerCore extends AdminController
     {
         parent::setMedia();
         $this->addJqueryPlugin(['typewatch', 'fancybox']);
+        $this->addJS(_PS_JS_DIR_.'admin/customer_groups.js');
     }
 
     /**
@@ -1335,6 +1349,45 @@ class AdminCustomersControllerCore extends AdminController
         }
 
         $this->ajaxDie(json_encode($toReturn));
+    }
+
+    /**
+     * Update customer groups via Ajax when group selection changes
+     *
+     * @return void
+     *
+     * @throws PrestaShopException
+     */
+    public function ajaxProcessUpdateCustomerGroups()
+    {
+        if ($this->hasEditPermission()) {
+            $customerId = Tools::getIntValue('id_customer');
+            $customer = new Customer($customerId);
+            if (!Validate::isLoadedObject($customer)) {
+                $this->ajaxDie(json_encode([]));
+            }
+
+            $groups = Tools::getValue('groupBox');
+            if (!is_array($groups)) {
+                $groups = [];
+            }
+
+            $customer->updateGroup($groups);
+
+            $groupsData = [];
+            $customerGroups = $customer->getGroups();
+            foreach ($customerGroups as $idGroup) {
+                $group = new Group((int)$idGroup, $this->context->language->id);
+                if (Validate::isLoadedObject($group)) {
+                    $groupsData[] = [
+                        'id_group' => $group->id,
+                        'name'     => $group->name,
+                    ];
+                }
+            }
+
+            $this->ajaxDie(json_encode($groupsData));
+        }
     }
 
     /**
