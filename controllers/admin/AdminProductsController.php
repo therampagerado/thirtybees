@@ -645,6 +645,31 @@ class AdminProductsControllerCore extends AdminController
     }
 
     /**
+     * Ajax process to retrieve tag pool
+     */
+    public function ajaxProcessGetTagPool()
+    {
+        $idLang = Tools::getIntValue('id_lang');
+        $offset = Tools::getIntValue('offset');
+        $limit = Tools::getIntValue('limit', 25);
+
+        $tags = Tag::getTopTags($idLang, $offset, $limit + 1);
+        $hasMore = count($tags) > $limit;
+        if ($hasMore) {
+            $tags = array_slice($tags, 0, $limit);
+        }
+        $tagNames = [];
+        foreach ($tags as $tag) {
+            $tagNames[] = $tag['name'];
+        }
+
+        $this->ajaxDie(Tools::jsonEncode([
+            'tags'   => $tagNames,
+            'hasMore' => $hasMore,
+        ]));
+    }
+
+    /**
      * Process delete virtual product
      *
      * @throws PrestaShopException
@@ -4717,9 +4742,10 @@ class AdminProductsControllerCore extends AdminController
 
         $currency = $this->context->currency;
 
+        $languages = $this->getLanguages();
         $data->assign(
             [
-                'languages'             => $this->getLanguages(),
+                'languages'             => $languages,
                 'default_form_language' => $this->getDefaultFormLanguage(),
                 'currency'              => $currency,
             ]
@@ -4776,6 +4802,20 @@ class AdminProductsControllerCore extends AdminController
         $data->assign('imagesTypes', ImageType::getImagesTypes(ImageEntity::ENTITY_TYPE_PRODUCTS));
 
         $product->tags = Tag::getProductTags($product->id);
+
+        $tagPool = [];
+        $tagPoolMore = [];
+        foreach ($languages as $language) {
+            $tags = Tag::getTopTags($language['id_lang'], 0, 26);
+            $tagPoolMore[$language['id_lang']] = count($tags) > 25;
+            $tagPool[$language['id_lang']] = array_slice($tags, 0, 25);
+        }
+        $data->assign(
+            [
+                'tag_pool'      => $tagPool,
+                'tag_pool_more' => $tagPoolMore,
+            ]
+        );
 
         $data->assign('product_type', Tools::getIntValue('type_product', $product->getType()));
         $data->assign('is_in_pack', (int) Pack::isPacked($product->id));

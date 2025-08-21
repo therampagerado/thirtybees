@@ -305,6 +305,47 @@ class TagCore extends ObjectModel
     }
 
     /**
+     * Retrieve most used tags
+     *
+     * @param int $idLang
+     * @param int $offset
+     * @param int $limit
+     *
+     * @return array
+     *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    public static function getTopTags($idLang, $offset = 0, $limit = 25)
+    {
+        $context = Context::getContext();
+        if (Group::isFeatureActive()) {
+            $groups = FrontController::getCurrentCustomerGroups();
+            $query = (new DbQuery())
+                ->select('t.`name`, pt.`counter` AS `times`')
+                ->from('tag_count', 'pt')
+                ->innerJoin('tag', 't', 't.`id_tag` = pt.`id_tag`')
+                ->where('pt.`id_group` '.(count($groups) ? 'IN ('.implode(',', $groups).')' : '= 1'))
+                ->where('pt.`id_lang` = '.(int) $idLang)
+                ->where('pt.`id_shop` = '.(int) $context->shop->id)
+                ->orderBy('`times` DESC')
+                ->limit((int) $limit, (int) $offset);
+        } else {
+            $query = (new DbQuery())
+                ->select('t.`name`, pt.`counter` AS `times`')
+                ->from('tag_count', 'pt')
+                ->innerJoin('tag', 't', 't.`id_tag` = pt.`id_tag`')
+                ->where('pt.`id_group` = 0')
+                ->where('pt.`id_lang` = '.(int) $idLang)
+                ->where('pt.`id_shop` = '.(int) $context->shop->id)
+                ->orderBy('`times` DESC')
+                ->limit((int) $limit, (int) $offset);
+        }
+
+        return Db::readOnly()->getArray($query);
+    }
+
+    /**
      * @param int $idProduct
      *
      * @return array|false

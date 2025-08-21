@@ -506,18 +506,61 @@
 			</div>
 			{/if}
 		</div>
-		<div class="col-lg-9 col-lg-offset-3">
-			<div class="help-block">{l s='Each tag has to be followed by a comma. The following characters are forbidden: %s' sprintf='!&lt;;&gt;;?=+#&quot;&deg;{}_$%.'}
-			</div>
-		</div>
-	</div>
-	<div class="panel-footer">
-		<a href="{$link->getAdminLink('AdminProducts')|escape:'html':'UTF-8'}{if isset($smarty.request.page) && $smarty.request.page > 1}&amp;submitFilterproduct={$smarty.request.page|intval}{/if}" class="btn btn-default"><i class="process-icon-cancel"></i> {l s='Cancel'}</a>
-		<button type="submit" name="submitAddproduct" class="btn btn-default pull-right" disabled="disabled"><i class="process-icon-loading"></i> {l s='Save'}</button>
-		<button type="submit" name="submitAddproductAndStay" class="btn btn-default pull-right" disabled="disabled"><i class="process-icon-loading"></i> {l s='Save and stay'}</button>
+                <div class="col-lg-9 col-lg-offset-3">
+                        <div class="help-block">{l s='Each tag has to be followed by a comma. The following characters are forbidden: %s' sprintf='!&lt;;&gt;;?=+#&quot;&deg;{}_$%.'}
+                        </div>
+                </div>
+               <div class="col-lg-9 col-lg-offset-3">
+                        {if $languages|count > 1}
+                        {foreach from=$languages item=language}
+                        <div class="translatable-field lang-{$language.id_lang}">
+                                <div id="tag_pool_{$language.id_lang}" class="tagify-container tag-pool" data-lang="{$language.id_lang}">
+                                {foreach from=$tag_pool[$language.id_lang] item=tag}
+                                        <span>{$tag.name|escape:'html':'UTF-8'}</span>
+                                {/foreach}
+                                </div>
+                                <button type="button" id="tag_pool_load_more_{$language.id_lang}" class="btn btn-default btn-xs tag-pool-load-more" data-lang="{$language.id_lang}"{if !$tag_pool_more[$language.id_lang]} style="display:none"{/if}>{l s='Load more'}</button>
+                        </div>
+                        {/foreach}
+                        {else}
+                        <div id="tag_pool_{$id_lang}" class="tagify-container tag-pool" data-lang="{$id_lang}">
+                        {foreach from=$tag_pool[$id_lang] item=tag}
+                                <span>{$tag.name|escape:'html':'UTF-8'}</span>
+                        {/foreach}
+                        </div>
+                        <button type="button" id="tag_pool_load_more_{$id_lang}" class="btn btn-default btn-xs tag-pool-load-more" data-lang="{$id_lang}"{if !$tag_pool_more[$id_lang]} style="display:none"{/if}>{l s='Load more'}</button>
+                        {/if}
+               </div>
+        </div>
+        <div class="panel-footer">
+                <a href="{$link->getAdminLink('AdminProducts')|escape:'html':'UTF-8'}{if isset($smarty.request.page) && $smarty.request.page > 1}&amp;submitFilterproduct={$smarty.request.page|intval}{/if}" class="btn btn-default"><i class="process-icon-cancel"></i> {l s='Cancel'}</a>
+                <button type="submit" name="submitAddproduct" class="btn btn-default pull-right" disabled="disabled"><i class="process-icon-loading"></i> {l s='Save'}</button>
+                <button type="submit" name="submitAddproductAndStay" class="btn btn-default pull-right" disabled="disabled"><i class="process-icon-loading"></i> {l s='Save and stay'}</button>
 	</div>
 </div>
 <script type="text/javascript">
-	hideOtherLanguage({$default_form_language});
-	var missing_product_name = '{l s='Please fill product name input field' js=1}';
+        hideOtherLanguage({$default_form_language});
+        var missing_product_name = '{l s='Please fill product name input field' js=1}';
+        $(function(){
+                var tagPoolUrl = '{$link->getAdminLink('AdminProducts')|escape:'javascript':'UTF-8'}';
+                $('.tag-pool').each(function(){
+                        var langId = $(this).data('lang');
+                        var $container = $(this);
+                        $container.on('click','span',function(){
+                                $('#tags_'+langId).tagify('add', $(this).text());
+                        });
+                        $('#tag_pool_load_more_'+langId).on('click', function(){
+                                var $btn = $(this);
+                                var offset = $container.children('span').length;
+                                $.getJSON(tagPoolUrl, {ajax:1, action:'getTagPool', id_lang:langId, offset:offset}, function(resp){
+                                        $.each(resp.tags, function(i, tag){
+                                                $container.append('<span>'+tag+'</span>');
+                                        });
+                                        if (!resp.hasMore || !resp.tags.length) {
+                                                $btn.hide();
+                                        }
+                                });
+                        });
+                });
+        });
 </script>
