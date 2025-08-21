@@ -133,6 +133,11 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
     public $bo_menu = 1;
 
     /**
+     * @var string JSON encoded product tab order
+     */
+    public $product_tabs;
+
+    /**
      * @var bool
      */
     public $bo_show_screencast = false;
@@ -198,6 +203,7 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
             'default_tab'              => ['type' => self::TYPE_INT, 'validate' => 'isInt', 'dbDefault' => '0'],
             'bo_width'                 => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'dbDefault' => '0'],
             'bo_menu'                  => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbType' => 'tinyint(1)', 'dbDefault' => '1'],
+            'product_tabs'             => ['type' => self::TYPE_STRING, 'validate' => 'isAnything', 'dbType' => 'text', 'dbNullable' => true],
             'active'                   => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbDefault' => '0'],
             'optin'                    => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbDefault' => '1'],
             'last_connection_date'     => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'dbNullable' => true],

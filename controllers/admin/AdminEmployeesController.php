@@ -45,6 +45,9 @@ class AdminEmployeesControllerCore extends AdminController
     /** @var array tabs list */
     protected $tabs_list = [];
 
+    /** @var array product tabs list */
+    protected $product_tabs = [];
+
     /** @var bool $restrict_edition */
     protected $restrict_edition = false;
 
@@ -207,6 +210,24 @@ class AdminEmployeesControllerCore extends AdminController
                 }
             }
         }
+
+        $this->product_tabs = [
+            ['id' => 'Informations', 'name' => $this->l('Information')],
+            ['id' => 'Pack', 'name' => $this->l('Pack')],
+            ['id' => 'VirtualProduct', 'name' => $this->l('Virtual Product')],
+            ['id' => 'Prices', 'name' => $this->l('Prices')],
+            ['id' => 'Seo', 'name' => $this->l('SEO')],
+            ['id' => 'Images', 'name' => $this->l('Images')],
+            ['id' => 'Associations', 'name' => $this->l('Associations')],
+            ['id' => 'Shipping', 'name' => $this->l('Shipping')],
+            ['id' => 'Combinations', 'name' => $this->l('Combinations')],
+            ['id' => 'Features', 'name' => $this->l('Features')],
+            ['id' => 'Customization', 'name' => $this->l('Customization')],
+            ['id' => 'Attachments', 'name' => $this->l('Attachments')],
+            ['id' => 'Quantities', 'name' => $this->l('Quantities')],
+            ['id' => 'Suppliers', 'name' => $this->l('Suppliers')],
+            ['id' => 'Warehouses', 'name' => $this->l('Warehouses')],
+        ];
 
         $homeTab = Tab::getInstanceFromClassName('AdminDashboard', $this->context->language->id);
         $this->tabs_list[$homeTab->id] = [
@@ -434,6 +455,17 @@ class AdminEmployeesControllerCore extends AdminController
                     'hint'     => $this->l('Back office theme.'),
                 ],
                 [
+                    'type'    => 'swap',
+                    'label'   => $this->l('Product tabs'),
+                    'name'    => 'product_tabs',
+                    'options' => [
+                        'query' => $this->product_tabs,
+                        'id'    => 'id',
+                        'name'  => 'name',
+                    ],
+                    'hint'    => $this->l('Select and order tabs for product editing.'),
+                ],
+                [
                     'type'     => 'radio',
                     'label'    => $this->l('Admin menu orientation'),
                     'name'     => 'bo_menu',
@@ -519,6 +551,14 @@ class AdminEmployeesControllerCore extends AdminController
 
         $this->fields_value['passwd'] = false;
         $this->fields_value['bo_theme_css'] = $obj->bo_theme.'|'.$obj->bo_css;
+
+        $tabsOrder = $obj->product_tabs ? json_decode($obj->product_tabs, true) : [];
+        if (is_array($tabsOrder) && $tabsOrder) {
+            asort($tabsOrder, SORT_NUMERIC);
+            $this->fields_value['product_tabs'] = array_keys($tabsOrder);
+        } else {
+            $this->fields_value['product_tabs'] = array_column($this->product_tabs, 'id');
+        }
 
         if (empty($obj->id)) {
             $this->fields_value['id_lang'] = $this->context->language->id;
@@ -743,6 +783,16 @@ class AdminEmployeesControllerCore extends AdminController
      */
     public function postProcess()
     {
+        $tabs = Tools::getValue('product_tabs_selected');
+        if (is_array($tabs)) {
+            $order = [];
+            $i = 0;
+            foreach ($tabs as $tab) {
+                $order[$tab] = $i++;
+            }
+            $_POST['product_tabs'] = json_encode($order);
+        }
+
         if ((Tools::isSubmit('submitBulkdeleteemployee') || Tools::isSubmit('submitBulkdisableSelectionemployee') || Tools::isSubmit('deleteemployee') || Tools::isSubmit('status') || Tools::isSubmit('statusemployee') || Tools::isSubmit('submitAddemployee')) && _PS_MODE_DEMO_) {
             $this->errors[] = Tools::displayError('This functionality has been disabled.');
 

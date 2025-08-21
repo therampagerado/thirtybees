@@ -184,9 +184,6 @@ class AdminProductsControllerCore extends AdminController
             );
         }
 
-        // Sort the tabs that need to be preloaded by their priority number
-        asort($this->available_tabs, SORT_NUMERIC);
-
         /* Adding tab if modules are hooked */
         $modulesList = Hook::getHookModuleExecList('displayAdminProductsExtra');
         if (is_array($modulesList) && count($modulesList) > 0) {
@@ -195,6 +192,19 @@ class AdminProductsControllerCore extends AdminController
                 $this->available_tabs_lang['Module'.ucfirst($m['module'])] = Module::getModuleName($m['module']);
             }
         }
+
+        // Apply employee specific tab order
+        $employeeTabOrder = json_decode((string)$this->context->employee->product_tabs, true);
+        if (is_array($employeeTabOrder)) {
+            foreach ($employeeTabOrder as $tab => $position) {
+                if (isset($this->available_tabs[$tab])) {
+                    $this->available_tabs[$tab] = (int)$position;
+                }
+            }
+        }
+
+        // Sort the tabs that need to be preloaded by their priority number
+        asort($this->available_tabs, SORT_NUMERIC);
 
         if (Tools::getValue('reset_filter_category')) {
             $this->context->cookie->id_category_products_filter = false;
