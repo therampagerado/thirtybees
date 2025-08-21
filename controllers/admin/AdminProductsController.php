@@ -196,6 +196,8 @@ class AdminProductsControllerCore extends AdminController
             }
         }
 
+        $this->applyEmployeeTabOrder();
+
         if (Tools::getValue('reset_filter_category')) {
             $this->context->cookie->id_category_products_filter = false;
         }
@@ -379,6 +381,26 @@ class AdminProductsControllerCore extends AdminController
                 'position'   => 'position',
             ];
         }
+    }
+
+    /**
+     * Apply product tab order defined by employee
+     */
+    protected function applyEmployeeTabOrder()
+    {
+        $order = $this->context->employee->bo_product_tabs;
+        if (!$order) {
+            return;
+        }
+        $tabs = array_map('trim', explode(',', $order));
+        $ordered = [];
+        foreach ($tabs as $tab) {
+            if (array_key_exists($tab, $this->available_tabs)) {
+                $ordered[$tab] = $this->available_tabs[$tab];
+                unset($this->available_tabs[$tab]);
+            }
+        }
+        $this->available_tabs = $ordered + $this->available_tabs;
     }
 
     /**

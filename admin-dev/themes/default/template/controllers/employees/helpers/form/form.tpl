@@ -25,28 +25,35 @@
 {extends file="helpers/form/form.tpl"}
 
 {block name="input"}
-	{if $input.type == 'default_tab'}
-	<select id="{$input.name}" name="{$input.name}" class="chosen fixed-width-xxl">
-		{foreach $input.options AS $option}
-			{if isset($option.children) && $option.children|@count}
-				<optgroup label="{$option.name|escape:'html':'UTF-8'}"></optgroup>
-				{foreach $option.children AS $children}
-					<option value="{$children.id_tab}" {if $fields_value[$input.name] == $children.id_tab}selected="selected"{/if}>{$children.name|escape:'html':'UTF-8'}</option>
-				{/foreach}
-			{else}
-				<option value="{$option.id_tab}" {if $fields_value[$input.name] == $option.id_tab}selected="selected"{/if}>{$option.name|escape:'html':'UTF-8'}</option>
-			{/if}
-		{/foreach}
-	</select>
-	{else}
-		{$smarty.block.parent}
-	{/if}
+        {if $input.type == 'default_tab'}
+        <select id="{$input.name}" name="{$input.name}" class="chosen fixed-width-xxl">
+                {foreach $input.options AS $option}
+                        {if isset($option.children) && $option.children|@count}
+                                <optgroup label="{$option.name|escape:'html':'UTF-8'}"></optgroup>
+                                {foreach $option.children AS $children}
+                                        <option value="{$children.id_tab}" {if $fields_value[$input.name] == $children.id_tab}selected="selected"{/if}>{$children.name|escape:'html':'UTF-8'}</option>
+                                {/foreach}
+                        {else}
+                                <option value="{$option.id_tab}" {if $fields_value[$input.name] == $option.id_tab}selected="selected"{/if}>{$option.name|escape:'html':'UTF-8'}</option>
+                        {/if}
+                {/foreach}
+        </select>
+        {elseif $input.type == 'product_tabs'}
+        <input type="hidden" name="{$input.name}" id="{$input.name}" value="{$fields_value[$input.name]|escape:'html':'UTF-8'}" />
+        <ul id="product_tabs_sort" class="list-group">
+                {foreach from=$input.values key=tab item=name}
+                        <li class="list-group-item" data-tab="{$tab}">{$name}</li>
+                {/foreach}
+        </ul>
+        {else}
+                {$smarty.block.parent}
+        {/if}
 {/block}
 
 {block name=script}
 	$(document).ready(function(){
-		$('select[name=id_profile]').change(function(){
-			ifSuperAdmin($(this));
+                $('select[name=id_profile]').change(function(){
+                        ifSuperAdmin($(this));
 
 			$.ajax({
 				url: "{$link->getAdminLink('AdminEmployees')|addslashes}",
@@ -75,8 +82,15 @@
 				}
 			});
 		});
-		ifSuperAdmin($('select[name=id_profile]'));
-	});
+                ifSuperAdmin($('select[name=id_profile]'));
+
+                $('#product_tabs_sort').sortable({
+                        update: function() {
+                                var order = $('#product_tabs_sort').children().map(function(){return $(this).data('tab');}).get();
+                                $('#bo_product_tabs').val(order.join(','));
+                        }
+                });
+        });
 
 	function ifSuperAdmin(el)
 	{

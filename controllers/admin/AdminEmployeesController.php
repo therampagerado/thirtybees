@@ -250,6 +250,7 @@ class AdminEmployeesControllerCore extends AdminController
         $this->addJS(__PS_BASE_URI__.$this->admin_webpath.'/themes/'.$this->bo_theme.'/js/vendor/jquery-passy.js');
         $this->addjQueryPlugin('validate');
         $this->addJS(_PS_JS_DIR_.'jquery/plugins/validate/localization/messages_'.$this->context->language->iso_code.'.js');
+        $this->addJqueryUI('ui.sortable');
     }
 
     /**
@@ -372,6 +373,33 @@ class AdminEmployeesControllerCore extends AdminController
         $image = _PS_EMPLOYEE_IMG_DIR_.$obj->id.'.'.$this->imageType;
         $imageUrl = ImageManager::thumbnail($image, $this->table.'_'.(int) $obj->id.'.'.$this->imageType, 150, $this->imageType, true, true);
 
+        $productTabs = [
+            'Informations'   => $this->l('Information'),
+            'Pack'           => $this->l('Pack'),
+            'VirtualProduct' => $this->l('Virtual Product'),
+            'Prices'         => $this->l('Prices'),
+            'Seo'            => $this->l('SEO'),
+            'Images'         => $this->l('Images'),
+            'Associations'   => $this->l('Associations'),
+            'Shipping'       => $this->l('Shipping'),
+            'Combinations'   => $this->l('Combinations'),
+            'Features'       => $this->l('Features'),
+            'Customization'  => $this->l('Customization'),
+            'Attachments'    => $this->l('Attachments'),
+            'Quantities'     => $this->l('Quantities'),
+            'Suppliers'      => $this->l('Suppliers'),
+            'Warehouses'     => $this->l('Warehouses'),
+        ];
+
+        $order = $obj->bo_product_tabs ? array_map('trim', explode(',', $obj->bo_product_tabs)) : array_keys($productTabs);
+        $orderedTabs = [];
+        foreach ($order as $tab) {
+            if (isset($productTabs[$tab])) {
+                $orderedTabs[$tab] = $productTabs[$tab];
+                unset($productTabs[$tab]);
+            }
+        }
+        $productTabs = $orderedTabs + $productTabs;
 
         $this->fields_form['input'] = array_merge(
             $this->fields_form['input'], [
@@ -432,6 +460,13 @@ class AdminEmployeesControllerCore extends AdminController
                     ],
                     'onchange' => 'var value_array = $(this).val().split("|"); $("link").first().attr("href", "themes/" + value_array[0] + "/css/" + value_array[1]);',
                     'hint'     => $this->l('Back office theme.'),
+                ],
+                [
+                    'type'  => 'product_tabs',
+                    'label' => $this->l('Product tabs order'),
+                    'name'  => 'bo_product_tabs',
+                    'values'=> $productTabs,
+                    'hint'  => $this->l('Drag and drop to reorder product tabs.'),
                 ],
                 [
                     'type'     => 'radio',
@@ -519,6 +554,7 @@ class AdminEmployeesControllerCore extends AdminController
 
         $this->fields_value['passwd'] = false;
         $this->fields_value['bo_theme_css'] = $obj->bo_theme.'|'.$obj->bo_css;
+        $this->fields_value['bo_product_tabs'] = implode(',', array_keys($productTabs));
 
         if (empty($obj->id)) {
             $this->fields_value['id_lang'] = $this->context->language->id;

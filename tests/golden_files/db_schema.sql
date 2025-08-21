@@ -863,6 +863,7 @@ CREATE TABLE `PREFIX_employee` (
   `default_tab` int(11) unsigned NOT NULL DEFAULT '0',
   `bo_width` int(11) unsigned NOT NULL DEFAULT '0',
   `bo_menu` tinyint(1) NOT NULL DEFAULT '1',
+  `bo_product_tabs` text DEFAULT NULL,
   `active` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `optin` tinyint(1) unsigned NOT NULL DEFAULT '1',
   `last_connection_date` datetime DEFAULT NULL,
