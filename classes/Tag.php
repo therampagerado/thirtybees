@@ -333,6 +333,43 @@ class TagCore extends ObjectModel
     }
 
     /**
+     * Retrieve most used tags
+     *
+     * @param int $idLang language identifier
+     * @param array $shopIds list of shop ids
+     * @param int $offset starting offset
+     * @param int $limit number of tags to load
+     *
+     * @return array
+     *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    public static function getTopTags($idLang, array $shopIds, $offset = 0, $limit = 25)
+    {
+        $idLang = (int) $idLang;
+        $offset = (int) $offset;
+        $limit = (int) $limit;
+
+        if (!$shopIds) {
+            $shopIds = [Context::getContext()->shop->id];
+        }
+        $shopIds = array_map('intval', $shopIds);
+
+        $query = (new DbQuery())
+            ->select('t.`id_tag`, t.`name`, COUNT(pt.`id_product`) AS `times`')
+            ->from('tag', 't')
+            ->innerJoin('product_tag', 'pt', 'pt.`id_tag` = t.`id_tag` AND pt.`id_lang` = '.$idLang)
+            ->innerJoin('product_shop', 'ps', 'ps.`id_product` = pt.`id_product` AND ps.`id_shop` IN ('.implode(',', $shopIds).')')
+            ->where('t.`id_lang` = '.$idLang)
+            ->groupBy('t.`id_tag`')
+            ->orderBy('`times` DESC')
+            ->limit($limit, $offset);
+
+        return Db::readOnly()->getArray($query);
+    }
+
+    /**
      * @param int $idProduct
      *
      * @return bool

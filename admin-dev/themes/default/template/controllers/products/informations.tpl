@@ -479,16 +479,18 @@
 						});
 					</script>
 					{/literal}
-				{if $languages|count > 1}
-				<div class="translatable-field lang-{$language.id_lang}">
-					<div class="col-lg-9">
-				{/if}
-						<input type="text" id="tags_{$language.id_lang}" class="tagify updateCurrentText" name="tags_{$language.id_lang}" value="{$product->getTags($language.id_lang, true)|htmlentitiesUTF8}" />
-				{if $languages|count > 1}
-					</div>
-					<div class="col-lg-2">
-						<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
-							{$language.iso_code}
+                                {if $languages|count > 1}
+                                <div class="translatable-field lang-{$language.id_lang}">
+                                        <div class="col-lg-9">
+                                {/if}
+                                                <input type="text" id="tags_{$language.id_lang}" class="tagify updateCurrentText" name="tags_{$language.id_lang}" value="{$product->getTags($language.id_lang, true)|htmlentitiesUTF8}" />
+                                                <div id="tag-pool-{$language.id_lang}" class="tagify-container tag-pool" data-lang="{$language.id_lang}"></div>
+                                                <button type="button" class="btn btn-link load-more-tags" id="load-more-tags-{$language.id_lang}" data-lang="{$language.id_lang}">{l s='Load more'}</button>
+                                {if $languages|count > 1}
+                                        </div>
+                                        <div class="col-lg-2">
+                                                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+                                                        {$language.iso_code}
 							<span class="caret"></span>
 						</button>
 						<ul class="dropdown-menu">
@@ -499,14 +501,57 @@
 							{/foreach}
 						</ul>
 					</div>
-				</div>
-				{/if}
-				{/foreach}
-			{if $languages|count > 1}
-			</div>
-			{/if}
-		</div>
-		<div class="col-lg-9 col-lg-offset-3">
+                                </div>
+                                {/if}
+                                {/foreach}
+                        {literal}
+                        <script type="text/javascript">
+                        $(function(){
+                                function loadTagPool(idLang){
+                                        var $container = $('#tag-pool-'+idLang);
+                                        var offset = $container.data('offset') || 0;
+                                        $.ajax({
+                                                url: 'ajax-tab.php',
+                                                type: 'POST',
+                                                dataType: 'json',
+                                                data: {
+                                                        ajax: '1',
+                                                        token: token,
+                                                        controller: 'AdminProducts',
+                                                        action: 'TagPool',
+                                                        id_lang: idLang,
+                                                        offset: offset
+                                                },
+                                                success: function(tags){
+                                                        if (tags && tags.length){
+                                                                $.each(tags, function(i, tag){
+                                                                        $('<span/>').text(tag.name).css('cursor','pointer').appendTo($container).click(function(){
+                                                                                $('#tags_'+idLang).tagify('add', tag.name);
+                                                                        });
+                                                                });
+                                                                $container.data('offset', offset + tags.length);
+                                                        } else {
+                                                                $('#load-more-tags-'+idLang).hide();
+                                                        }
+                                                }
+                                        });
+                                }
+                                $('.tag-pool').each(function(){
+                                        var idLang = $(this).data('lang');
+                                        loadTagPool(idLang);
+                                        $('#load-more-tags-'+idLang).on('click', function(e){
+                                                e.preventDefault();
+                                                loadTagPool(idLang);
+                                        });
+                                });
+                        });
+                        </script>
+                        {/literal}
+                        {if $languages|count > 1}
+                        </div>
+                        {/if}
+                </div>
+                <div class="col-lg-9 col-lg-offset-3">
 			<div class="help-block">{l s='Each tag has to be followed by a comma. The following characters are forbidden: %s' sprintf='!&lt;;&gt;;?=+#&quot;&deg;{}_$%.'}
 			</div>
 		</div>

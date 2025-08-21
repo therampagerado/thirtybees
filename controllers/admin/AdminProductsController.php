@@ -645,6 +645,20 @@ class AdminProductsControllerCore extends AdminController
     }
 
     /**
+     * Ajax process tag pool
+     *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    public function ajaxProcessTagPool()
+    {
+        $idLang = Tools::getIntValue('id_lang', $this->context->language->id);
+        $offset = Tools::getIntValue('offset', 0);
+        $tags = Tag::getTopTags($idLang, Shop::getContextListShopID(), $offset);
+        $this->ajaxDie(Tools::jsonEncode($tags));
+    }
+
+    /**
      * Process delete virtual product
      *
      * @throws PrestaShopException
