@@ -101,6 +101,32 @@ class AdminProductsControllerCore extends AdminController
     protected $product_exists_in_shop = false;
 
     /**
+     * Returns list of available product tabs with translated names
+     *
+     * @return array
+     */
+    public static function getProductTabs()
+    {
+        return [
+            'Informations'   => Translate::getAdminTranslation('Information', 'AdminProducts'),
+            'Pack'           => Translate::getAdminTranslation('Pack', 'AdminProducts'),
+            'VirtualProduct' => Translate::getAdminTranslation('Virtual Product', 'AdminProducts'),
+            'Prices'         => Translate::getAdminTranslation('Prices', 'AdminProducts'),
+            'Seo'            => Translate::getAdminTranslation('SEO', 'AdminProducts'),
+            'Associations'   => Translate::getAdminTranslation('Associations', 'AdminProducts'),
+            'Images'         => Translate::getAdminTranslation('Images', 'AdminProducts'),
+            'Shipping'       => Translate::getAdminTranslation('Shipping', 'AdminProducts'),
+            'Combinations'   => Translate::getAdminTranslation('Combinations', 'AdminProducts'),
+            'Features'       => Translate::getAdminTranslation('Features', 'AdminProducts'),
+            'Customization'  => Translate::getAdminTranslation('Customization', 'AdminProducts'),
+            'Attachments'    => Translate::getAdminTranslation('Attachments', 'AdminProducts'),
+            'Quantities'     => Translate::getAdminTranslation('Quantities', 'AdminProducts'),
+            'Suppliers'      => Translate::getAdminTranslation('Suppliers', 'AdminProducts'),
+            'Warehouses'     => Translate::getAdminTranslation('Warehouses', 'AdminProducts'),
+        ];
+    }
+
+    /**
      * AdminProductsControllerCore constructor.
      *
      * @throws PrestaShopException
@@ -144,23 +170,7 @@ class AdminProductsControllerCore extends AdminController
         $this->allow_export = true;
 
         // @since 1.5 : translations for tabs
-        $this->available_tabs_lang = [
-            'Informations'   => $this->l('Information'),
-            'Pack'           => $this->l('Pack'),
-            'VirtualProduct' => $this->l('Virtual Product'),
-            'Prices'         => $this->l('Prices'),
-            'Seo'            => $this->l('SEO'),
-            'Images'         => $this->l('Images'),
-            'Associations'   => $this->l('Associations'),
-            'Shipping'       => $this->l('Shipping'),
-            'Combinations'   => $this->l('Combinations'),
-            'Features'       => $this->l('Features'),
-            'Customization'  => $this->l('Customization'),
-            'Attachments'    => $this->l('Attachments'),
-            'Quantities'     => $this->l('Quantities'),
-            'Suppliers'      => $this->l('Suppliers'),
-            'Warehouses'     => $this->l('Warehouses'),
-        ];
+        $this->available_tabs_lang = static::getProductTabs();
 
         $this->available_tabs = ['Quantities' => 6, 'Warehouses' => 14];
         if ($this->context->shop->getContext() != Shop::CONTEXT_GROUP) {
@@ -194,6 +204,19 @@ class AdminProductsControllerCore extends AdminController
                 $this->available_tabs['Module'.ucfirst($m['module'])] = 23;
                 $this->available_tabs_lang['Module'.ucfirst($m['module'])] = Module::getModuleName($m['module']);
             }
+        }
+
+        // Reorder tabs based on employee preference
+        if ($this->context->employee && $this->context->employee->bo_product_tabs) {
+            $order = array_filter(explode(',', $this->context->employee->bo_product_tabs));
+            $reordered = [];
+            foreach ($order as $tab) {
+                if (isset($this->available_tabs[$tab])) {
+                    $reordered[$tab] = $this->available_tabs[$tab];
+                    unset($this->available_tabs[$tab]);
+                }
+            }
+            $this->available_tabs = $reordered + $this->available_tabs;
         }
 
         if (Tools::getValue('reset_filter_category')) {

@@ -25,69 +25,100 @@
 {extends file="helpers/form/form.tpl"}
 
 {block name="input"}
-	{if $input.type == 'default_tab'}
-	<select id="{$input.name}" name="{$input.name}" class="chosen fixed-width-xxl">
-		{foreach $input.options AS $option}
-			{if isset($option.children) && $option.children|@count}
-				<optgroup label="{$option.name|escape:'html':'UTF-8'}"></optgroup>
-				{foreach $option.children AS $children}
-					<option value="{$children.id_tab}" {if $fields_value[$input.name] == $children.id_tab}selected="selected"{/if}>{$children.name|escape:'html':'UTF-8'}</option>
-				{/foreach}
-			{else}
-				<option value="{$option.id_tab}" {if $fields_value[$input.name] == $option.id_tab}selected="selected"{/if}>{$option.name|escape:'html':'UTF-8'}</option>
-			{/if}
-		{/foreach}
-	</select>
-	{else}
-		{$smarty.block.parent}
-	{/if}
+        {if $input.type == 'default_tab'}
+        <select id="{$input.name}" name="{$input.name}" class="chosen fixed-width-xxl">
+                {foreach $input.options AS $option}
+                        {if isset($option.children) && $option.children|@count}
+                                <optgroup label="{$option.name|escape:'html':'UTF-8'}"></optgroup>
+                                {foreach $option.children AS $children}
+                                        <option value="{$children.id_tab}" {if $fields_value[$input.name] == $children.id_tab}selected="selected"{/if}>{$children.name|escape:'html':'UTF-8'}</option>
+                                {/foreach}
+                        {else}
+                                <option value="{$option.id_tab}" {if $fields_value[$input.name] == $option.id_tab}selected="selected"{/if}>{$option.name|escape:'html':'UTF-8'}</option>
+                        {/if}
+                {/foreach}
+        </select>
+        {elseif $input.type == 'product_tabs'}
+        {assign var=sorted value=','|explode:$fields_value[$input.name]}
+        <ul id="product_tabs_sortable" class="sortable-list">
+                {foreach from=$sorted item=tab}
+                        {if $tab && isset($input.values[$tab])}
+                                <li class="ui-state-default" data-tab="{$tab}"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{$input.values[$tab]|escape:'html':'UTF-8'}</li>
+                        {/if}
+                {/foreach}
+                {foreach from=$input.values key=tab item=label}
+                        {if !in_array($tab, $sorted)}
+                                <li class="ui-state-default" data-tab="{$tab}"><span class="ui-icon ui-icon-arrowthick-2-n-s"></span>{$label|escape:'html':'UTF-8'}</li>
+                        {/if}
+                {/foreach}
+        </ul>
+        <input type="hidden" id="product_tabs_sorted" name="{$input.name}" value="{$fields_value[$input.name]|escape:'html':'UTF-8'}" />
+        {else}
+                {$smarty.block.parent}
+        {/if}
 {/block}
 
 {block name=script}
-	$(document).ready(function(){
-		$('select[name=id_profile]').change(function(){
-			ifSuperAdmin($(this));
+        $(document).ready(function(){
+                $('select[name=id_profile]').change(function(){
+                        ifSuperAdmin($(this));
 
-			$.ajax({
-				url: "{$link->getAdminLink('AdminEmployees')|addslashes}",
-				cache: false,
-				data : {
-					ajax : '1',
-					action : 'getTabByIdProfile',
-					id_profile : $(this).val()
-				},
-				dataType : 'json',
-				success : function(resp,textStatus,jqXHR)
-				{
-					if (resp != false)
-					{
-						$('select[name=default_tab]').html('');
-						$.each(resp, function(key, r){
-							if (r.id_parent == 0)
-							{
-								$('select[name=default_tab]').append('<optgroup label="'+r.name+'"></optgroup>');
-								$.each(r.children, function(k, value){
-									$('select[name=default_tab]').append('<option value="'+r.id_tab+'">'+value.name+'</option>')
-								});
-							}
-						});
-					}
-				}
-			});
-		});
-		ifSuperAdmin($('select[name=id_profile]'));
-	});
+                        $.ajax({
+                                url: "{$link->getAdminLink('AdminEmployees')|addslashes}",
+                                cache: false,
+                                data : {
+                                        ajax : '1',
+                                        action : 'getTabByIdProfile',
+                                        id_profile : $(this).val()
+                                },
+                                dataType : 'json',
+                                success : function(resp,textStatus,jqXHR)
+                                {
+                                        if (resp != false)
+                                        {
+                                                $('select[name=default_tab]').html('');
+                                                $.each(resp, function(key, r){
+                                                        if (r.id_parent == 0)
+                                                        {
+                                                                $('select[name=default_tab]').append('<optgroup label="'+r.name+'"></optgroup>');
+                                                                $.each(r.children, function(k, value){
+                                                                        $('select[name=default_tab]').append('<option value="'+r.id_tab+'">'+value.name+'</option>')
+                                                                });
+                                                        }
+                                                });
+                                        }
+                                }
+                        });
+                });
+                ifSuperAdmin($('select[name=id_profile]'));
 
-	function ifSuperAdmin(el)
-	{
-		var val = $(el).val();
+                var $list = $('#product_tabs_sortable');
+                var $input = $('#product_tabs_sorted');
+                if ($list.length) {
+                        if (!$input.val()) {
+                                var initial = $list.children().map(function(){return $(this).data('tab');}).get().join(',');
+                                $input.val(initial);
+                        }
+                        $list.sortable({
+                                axis: 'y',
+                                update: function(){
+                                        var order = $list.children().map(function(){return $(this).data('tab');}).get().join(',');
+                                        $input.val(order);
+                                }
+                        });
+                }
+        });
 
-		if (!val || val == {$smarty.const._PS_ADMIN_PROFILE_})
-		{
-			$('.assoShop input[type=checkbox]').attr('disabled', true);
-			$('.assoShop input[type=checkbox]').attr('checked', true);
-		}
-		else
-			$('.assoShop input[type=checkbox]').attr('disabled', false);
-	}
+        function ifSuperAdmin(el)
+        {
+                var val = $(el).val();
+
+                if (!val || val == {$smarty.const._PS_ADMIN_PROFILE_})
+                {
+                        $('.assoShop input[type=checkbox]').attr('disabled', true);
+                        $('.assoShop input[type=checkbox]').attr('checked', true);
+                }
+                else
+                        $('.assoShop input[type=checkbox]').attr('disabled', false);
+        }
 {/block}

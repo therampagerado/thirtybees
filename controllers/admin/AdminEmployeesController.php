@@ -411,6 +411,13 @@ class AdminEmployeesControllerCore extends AdminController
                     'options' => $this->tabs_list,
                 ],
                 [
+                    'type'    => 'product_tabs',
+                    'label'   => $this->l('Product tabs order'),
+                    'name'    => 'bo_product_tabs',
+                    'values'  => AdminProductsController::getProductTabs(),
+                    'hint'    => $this->l('Drag and drop to reorder tabs on the product edit page.'),
+                ],
+                [
                     'type'    => 'select',
                     'label'   => $this->l('Language'),
                     'name'    => 'id_lang',
@@ -519,6 +526,7 @@ class AdminEmployeesControllerCore extends AdminController
 
         $this->fields_value['passwd'] = false;
         $this->fields_value['bo_theme_css'] = $obj->bo_theme.'|'.$obj->bo_css;
+        $this->fields_value['bo_product_tabs'] = $obj->bo_product_tabs;
 
         if (empty($obj->id)) {
             $this->fields_value['id_lang'] = $this->context->language->id;

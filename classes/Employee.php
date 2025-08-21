@@ -138,6 +138,11 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
     public $bo_show_screencast = false;
 
     /**
+     * @var string Ordered list of product tabs for this employee
+     */
+    public $bo_product_tabs;
+
+    /**
      * @var bool Status
      */
     public $active = 1;
@@ -197,6 +202,7 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
             'bo_css'                   => ['type' => self::TYPE_STRING, 'validate' => 'isGenericName', 'size' => 64 ],
             'default_tab'              => ['type' => self::TYPE_INT, 'validate' => 'isInt', 'dbDefault' => '0'],
             'bo_width'                 => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'dbDefault' => '0'],
+            'bo_product_tabs'          => ['type' => self::TYPE_STRING, 'validate' => 'isString', 'dbType' => 'text', 'dbNullable' => true],
             'bo_menu'                  => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbType' => 'tinyint(1)', 'dbDefault' => '1'],
             'active'                   => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbDefault' => '0'],
             'optin'                    => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbDefault' => '1'],
