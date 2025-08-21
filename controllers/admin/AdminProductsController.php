@@ -645,6 +645,21 @@ class AdminProductsControllerCore extends AdminController
     }
 
     /**
+     * Ajax process retrieve tag pool
+     *
+     * @throws PrestaShopDatabaseException
+     * @throws PrestaShopException
+     */
+    public function ajaxProcessTagPool()
+    {
+        $idLang = Tools::getIntValue('id_lang');
+        $offset = Tools::getIntValue('offset', 0);
+        $limit = 25;
+        $tags = Tag::getMainTags($idLang, $limit, $offset);
+        $this->ajaxDie(Tools::jsonEncode($tags));
+    }
+
+    /**
      * Process delete virtual product
      *
      * @throws PrestaShopException
@@ -4716,14 +4731,22 @@ class AdminProductsControllerCore extends AdminController
         $data = $this->createTemplate($this->tpl_form);
 
         $currency = $this->context->currency;
+        $languages = $this->getLanguages();
 
         $data->assign(
             [
-                'languages'             => $this->getLanguages(),
+                'languages'             => $languages,
                 'default_form_language' => $this->getDefaultFormLanguage(),
                 'currency'              => $currency,
             ]
         );
+
+        $tagPool = [];
+        foreach ($languages as $language) {
+            $tagPool[$language['id_lang']] = Tag::getMainTags($language['id_lang'], 25);
+        }
+        $data->assign('tag_pool', $tagPool);
+
         $this->object = $product;
         //$this->display = 'edit';
         $data->assign('product_name_redirected', Product::getProductName((int) $product->id_product_redirected, null, (int) $this->context->language->id));

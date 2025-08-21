@@ -269,13 +269,14 @@ class TagCore extends ObjectModel
     /**
      * @param int $idLang
      * @param int $nb
+     * @param int $offset
      *
      * @return array
      *
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
-    public static function getMainTags($idLang, $nb = 10)
+    public static function getMainTags($idLang, $nb = 10, $offset = 0)
     {
         $context = Context::getContext();
         if (Group::isFeatureActive()) {
@@ -284,11 +285,15 @@ class TagCore extends ObjectModel
                 ->select('t.`name`, pt.`counter` AS `times`')
                 ->from('tag_count', 'pt')
                 ->innerJoin('tag', 't', 't.`id_tag` = pt.`id_tag`')
-                ->where('pt.`id_group` '.(count($groups) ? 'IN ('.implode(',', $groups).')' : '= 1'))
                 ->where('pt.`id_lang` = '.(int) $idLang)
                 ->where('pt.`id_shop` = '.(int) $context->shop->id)
                 ->orderBy('`times` DESC')
-                ->limit((int) $nb);
+                ->limit((int) $nb, (int) $offset);
+            if ($groups) {
+                $query->where('pt.`id_group` IN ('.implode(',', $groups).')');
+            } else {
+                $query->where('pt.`id_group` = 0');
+            }
         } else {
             $query = (new DbQuery())
                 ->select('t.`name`, pt.`counter` AS `times`')
@@ -298,7 +303,7 @@ class TagCore extends ObjectModel
                 ->where('pt.`id_lang` = '.(int) $idLang)
                 ->where('pt.`id_shop` = '.(int) $context->shop->id)
                 ->orderBy('`times` DESC')
-                ->limit((int) $nb);
+                ->limit((int) $nb, (int) $offset);
         }
 
         return Db::readOnly()->getArray($query);

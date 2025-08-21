@@ -501,23 +501,75 @@
 					</div>
 				</div>
 				{/if}
-				{/foreach}
-			{if $languages|count > 1}
-			</div>
-			{/if}
-		</div>
-		<div class="col-lg-9 col-lg-offset-3">
-			<div class="help-block">{l s='Each tag has to be followed by a comma. The following characters are forbidden: %s' sprintf='!&lt;;&gt;;?=+#&quot;&deg;{}_$%.'}
-			</div>
-		</div>
-	</div>
-	<div class="panel-footer">
-		<a href="{$link->getAdminLink('AdminProducts')|escape:'html':'UTF-8'}{if isset($smarty.request.page) && $smarty.request.page > 1}&amp;submitFilterproduct={$smarty.request.page|intval}{/if}" class="btn btn-default"><i class="process-icon-cancel"></i> {l s='Cancel'}</a>
-		<button type="submit" name="submitAddproduct" class="btn btn-default pull-right" disabled="disabled"><i class="process-icon-loading"></i> {l s='Save'}</button>
-		<button type="submit" name="submitAddproductAndStay" class="btn btn-default pull-right" disabled="disabled"><i class="process-icon-loading"></i> {l s='Save and stay'}</button>
-	</div>
+                                {/foreach}
+                        {if $languages|count > 1}
+                        </div>
+                        {/if}
+                </div>
+                <div class="col-lg-9 col-lg-offset-3 tag-pool-container">
+                        {if $languages|count > 1}
+                                {foreach from=$languages item=language}
+                                        <div class="translatable-field lang-{$language.id_lang}">
+                                                <div id="tag_pool_{$language.id_lang}" class="tag-pool tagify-container" data-lang="{$language.id_lang}">
+                                                        {foreach from=$tag_pool[$language.id_lang] item=tag}
+                                                                <span>{$tag.name|escape:'html':'UTF-8'}</span>
+                                                        {/foreach}
+                                                </div>
+                                                <button type="button" class="btn btn-default tag-pool-load" data-lang="{$language.id_lang}" data-offset="25">{l s='Load more'}</button>
+                                        </div>
+                                {/foreach}
+                        {else}
+                                <div id="tag_pool_{$id_lang}" class="tag-pool tagify-container" data-lang="{$id_lang}">
+                                        {foreach from=$tag_pool[$id_lang] item=tag}
+                                                <span>{$tag.name|escape:'html':'UTF-8'}</span>
+                                        {/foreach}
+                                </div>
+                                <button type="button" class="btn btn-default tag-pool-load" data-lang="{$id_lang}" data-offset="25">{l s='Load more'}</button>
+                        {/if}
+                </div>
+                <div class="col-lg-9 col-lg-offset-3">
+                        <div class="help-block">{l s='Each tag has to be followed by a comma. The following characters are forbidden: %s' sprintf='!&lt;;&gt;;?=+#&quot;&deg;{}_$%.'}
+                        </div>
+                </div>
+        </div>
+        <div class="panel-footer">
+                <a href="{$link->getAdminLink('AdminProducts')|escape:'html':'UTF-8'}{if isset($smarty.request.page) && $smarty.request.page > 1}&amp;submitFilterproduct={$smarty.request.page|intval}{/if}" class="btn btn-default"><i class="process-icon-cancel"></i> {l s='Cancel'}</a>
+                <button type="submit" name="submitAddproduct" class="btn btn-default pull-right" disabled="disabled"><i class="process-icon-loading"></i> {l s='Save'}</button>
+                <button type="submit" name="submitAddproductAndStay" class="btn btn-default pull-right" disabled="disabled"><i class="process-icon-loading"></i> {l s='Save and stay'}</button>
+        </div>
 </div>
+{literal}
 <script type="text/javascript">
-	hideOtherLanguage({$default_form_language});
-	var missing_product_name = '{l s='Please fill product name input field' js=1}';
+        $(function(){
+                var tagPoolUrl = '{/literal}{$link->getAdminLink('AdminProducts', true)|addslashes}{literal}';
+                $('.tag-pool').on('click', 'span', function(){
+                        var lang = $(this).closest('.tag-pool').data('lang');
+                        $('#tags_'+lang).tagify('add', $(this).text());
+                });
+                $('.tag-pool-load').on('click', function(e){
+                        e.preventDefault();
+                        var btn = $(this);
+                        var lang = btn.data('lang');
+                        var offset = btn.data('offset');
+                        $.getJSON(tagPoolUrl+'&ajax=1&action=TagPool&id_lang='+lang+'&offset='+offset, function(tags){
+                                if(tags.length){
+                                        var container = $('#tag_pool_'+lang);
+                                        $.each(tags, function(i,t){
+                                                container.append('<span>'+t.name+'</span>');
+                                        });
+                                        btn.data('offset', offset + tags.length);
+                                        if(tags.length < 25){
+                                                btn.remove();
+                                        }
+                                } else {
+                                        btn.remove();
+                                }
+                        });
+                });
+        });
+</script>
+{/literal}
+<script type="text/javascript">
+        hideOtherLanguage({$default_form_language});
+        var missing_product_name = '{l s='Please fill product name input field' js=1}';
 </script>
