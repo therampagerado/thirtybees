@@ -230,12 +230,34 @@
 														{/if}
 													{/foreach}
 													</select>
-													<a href="#" id="removeSwap" class="btn btn-default btn-block"><i class="icon-arrow-left"></i> {l s='Remove'}</a>
-												</div>
-											</div>
-										</div>
-									</div>
-								{elseif $input.type == 'select'}
+                                                                                                       <a href="#" id="removeSwap" class="btn btn-default btn-block"><i class="icon-arrow-left"></i> {l s='Remove'}</a>
+                                                                                               </div>
+                                                                                       </div>
+                                                                               </div>
+                                                                       </div>
+                                                               {elseif $input.type == 'product_tabs'}
+                                                                       <div class="form-group">
+                                                                               <div class="col-lg-9">
+                                                                                       <input type="hidden" name="{$input.name}" id="{$input.name}" value="{$fields_value[$input.name]|escape:'html':'UTF-8'}" />
+                                                                                       <ul id="{$input.name}_sortable" class="list-unstyled">
+                                                                                       {foreach $input.order as $tab}
+                                                                                               <li class="ui-state-default" data-tab="{$tab|escape:'html':'UTF-8'}">{$input.tabs[$tab]|escape:'html':'UTF-8'}</li>
+                                                                                       {/foreach}
+                                                                                       </ul>
+                                                                               </div>
+                                                                       </div>
+                                                                       <script type="text/javascript">
+                                                                       $(function(){
+                                                                               var $s = $('#{$input.name}_sortable');
+                                                                               $s.sortable({
+                                                                                       update: function(){
+                                                                                               var order = $s.find('li').map(function(){return $(this).data('tab');}).get();
+                                                                                               $('#{$input.name}').val(order.join(','));
+                                                                                       }
+                                                                               });
+                                                                       });
+                                                                       </script>
+                                                                {elseif $input.type == 'select'}
 									{if isset($input.options.query) && !$input.options.query && isset($input.empty_message)}
 										{$input.empty_message}
 										{$input.required = false}

@@ -196,6 +196,18 @@ class AdminProductsControllerCore extends AdminController
             }
         }
 
+        if (!empty($this->context->employee->product_tabs)) {
+            $order = array_map('trim', explode(',', $this->context->employee->product_tabs));
+            $sorted = [];
+            foreach ($order as $tab) {
+                if (isset($this->available_tabs[$tab])) {
+                    $sorted[$tab] = $this->available_tabs[$tab];
+                    unset($this->available_tabs[$tab]);
+                }
+            }
+            $this->available_tabs = $sorted + $this->available_tabs;
+        }
+
         if (Tools::getValue('reset_filter_category')) {
             $this->context->cookie->id_category_products_filter = false;
         }

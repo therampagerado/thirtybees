@@ -250,6 +250,7 @@ class AdminEmployeesControllerCore extends AdminController
         $this->addJS(__PS_BASE_URI__.$this->admin_webpath.'/themes/'.$this->bo_theme.'/js/vendor/jquery-passy.js');
         $this->addjQueryPlugin('validate');
         $this->addJS(_PS_JS_DIR_.'jquery/plugins/validate/localization/messages_'.$this->context->language->iso_code.'.js');
+        $this->addJqueryUi('ui.sortable');
     }
 
     /**
@@ -293,11 +294,22 @@ class AdminEmployeesControllerCore extends AdminController
     {
         $this->_select = 'pl.`name` AS profile';
         $this->_join = 'LEFT JOIN `'._DB_PREFIX_.'profile` p ON a.`id_profile` = p.`id_profile`
-		LEFT JOIN `'._DB_PREFIX_.'profile_lang` pl ON (pl.`id_profile` = p.`id_profile` AND pl.`id_lang` = '
+                LEFT JOIN `'._DB_PREFIX_.'profile_lang` pl ON (pl.`id_profile` = p.`id_profile` AND pl.`id_lang` = '
             .(int) $this->context->language->id.')';
         $this->_use_found_rows = false;
 
         return parent::renderList();
+    }
+
+    /**
+     * Retrieve available product tabs
+     *
+     * @return array
+     */
+    protected function getProductTabs()
+    {
+        $controller = new AdminProductsController();
+        return $controller->available_tabs_lang;
     }
 
     /**
@@ -372,6 +384,8 @@ class AdminEmployeesControllerCore extends AdminController
         $image = _PS_EMPLOYEE_IMG_DIR_.$obj->id.'.'.$this->imageType;
         $imageUrl = ImageManager::thumbnail($image, $this->table.'_'.(int) $obj->id.'.'.$this->imageType, 150, $this->imageType, true, true);
 
+        $productTabs = $this->getProductTabs();
+        $productTabsOrder = $obj->product_tabs ? array_map('trim', explode(',', $obj->product_tabs)) : array_keys($productTabs);
 
         $this->fields_form['input'] = array_merge(
             $this->fields_form['input'], [
@@ -432,6 +446,13 @@ class AdminEmployeesControllerCore extends AdminController
                     ],
                     'onchange' => 'var value_array = $(this).val().split("|"); $("link").first().attr("href", "themes/" + value_array[0] + "/css/" + value_array[1]);',
                     'hint'     => $this->l('Back office theme.'),
+                ],
+                [
+                    'type'  => 'product_tabs',
+                    'label' => $this->l('Product tabs order'),
+                    'name'  => 'product_tabs',
+                    'tabs'  => $productTabs,
+                    'order' => $productTabsOrder,
                 ],
                 [
                     'type'     => 'radio',
@@ -519,6 +540,7 @@ class AdminEmployeesControllerCore extends AdminController
 
         $this->fields_value['passwd'] = false;
         $this->fields_value['bo_theme_css'] = $obj->bo_theme.'|'.$obj->bo_css;
+        $this->fields_value['product_tabs'] = implode(',', $productTabsOrder);
 
         if (empty($obj->id)) {
             $this->fields_value['id_lang'] = $this->context->language->id;
