@@ -266,6 +266,28 @@ class AdminAttributeGeneratorControllerCore extends AdminController
         $attributeGroups = AttributeGroup::getAttributesGroups($this->context->language->id);
         $this->product = new Product(Tools::getIntValue('id_product'));
 
+        $groupsAffecting = [];
+        foreach ($attributeGroups as $group) {
+            if (!empty($group['affect_product_view'])) {
+                $groupsAffecting[$group['id_attribute_group']] = true;
+            }
+        }
+
+        $preloadedImages = [];
+        $imgDir = _PS_IMG_DIR_.'attributes/';
+        if (is_dir($imgDir)) {
+            foreach (scandir($imgDir) as $file) {
+                if (preg_match('/\.(jpe?g|png|gif)$/i', $file)) {
+                    $preloadedImages[] = _PS_IMG_."attributes/".$file;
+                }
+            }
+        }
+
+        $optionsHtml = '<option value="">--</option>';
+        foreach ($preloadedImages as $img) {
+            $optionsHtml .= '<option value="'.$img.'">'.basename($img).'</option>';
+        }
+
         $this->context->smarty->assign(
             [
                 'tax_rates'                 => $this->product->getTaxesRate(),
@@ -276,6 +298,9 @@ class AdminAttributeGeneratorControllerCore extends AdminController
                 'url_generator'             => static::$currentIndex.'&id_product='.Tools::getIntValue('id_product').'&attributegenerator&token='.Tools::getValue('token'),
                 'attribute_groups'          => $attributeGroups,
                 'attribute_js'              => $attributeJs,
+                'groups_affecting_view'     => $groupsAffecting,
+                'preuploaded_images'        => $preloadedImages,
+                'image_options_html'        => $optionsHtml,
                 'toolbar_btn'               => $this->toolbar_btn,
                 'toolbar_scroll'            => true,
                 'show_page_header_toolbar'  => $this->show_page_header_toolbar,
