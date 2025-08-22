@@ -44,6 +44,7 @@ class AttributeGroupCore extends ObjectModel
         'fields'    => [
             'is_color_group' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
             'group_type'     => ['type' => self::TYPE_STRING, 'required' => true, 'values' => ['select', 'radio', 'color'], 'dbDefault' => 'select'],
+            'affect_product_view' => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
             'position'       => ['type' => self::TYPE_INT, 'validate' => 'isInt', 'dbDefault' => '0'],
 
             /* Lang fields */
@@ -64,6 +65,8 @@ class AttributeGroupCore extends ObjectModel
     public $position;
     /** @var string $group_type */
     public $group_type;
+    /** @var bool $affect_product_view */
+    public $affect_product_view;
     /** @var string|string[] Public Name */
     public $public_name;
     /**

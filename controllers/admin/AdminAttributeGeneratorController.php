@@ -266,6 +266,30 @@ class AdminAttributeGeneratorControllerCore extends AdminController
         $attributeGroups = AttributeGroup::getAttributesGroups($this->context->language->id);
         $this->product = new Product(Tools::getIntValue('id_product'));
 
+        $images = [];
+        $imageOptions = '';
+        foreach ($this->product->getImages($this->context->language->id) as $img) {
+            $path = $this->context->link->getImageLink(
+                $this->product->link_rewrite[$this->context->language->id] ?? '',
+                $this->product->id.'-'.$img['id_image'],
+                ImageType::getFormatedName('small')
+            );
+            $legend = $img['legend'] !== '' ? $img['legend'] : '#'.$img['id_image'];
+            $images[] = [
+                'id_image' => (int) $img['id_image'],
+                'legend'   => $legend,
+                'path'     => $path,
+            ];
+            $imageOptions .= '<option value="'.(int)$img['id_image'].'">'.Tools::safeOutput($legend).'</option>';
+        }
+
+        $affectingGroups = [];
+        foreach ($attributeGroups as $group) {
+            if (!empty($group['affect_product_view'])) {
+                $affectingGroups[] = (int) $group['id_attribute_group'];
+            }
+        }
+
         $this->context->smarty->assign(
             [
                 'tax_rates'                 => $this->product->getTaxesRate(),
@@ -276,6 +300,9 @@ class AdminAttributeGeneratorControllerCore extends AdminController
                 'url_generator'             => static::$currentIndex.'&id_product='.Tools::getIntValue('id_product').'&attributegenerator&token='.Tools::getValue('token'),
                 'attribute_groups'          => $attributeGroups,
                 'attribute_js'              => $attributeJs,
+                'product_images'            => $images,
+                'affecting_groups'          => $affectingGroups,
+                'image_options'             => $imageOptions,
                 'toolbar_btn'               => $this->toolbar_btn,
                 'toolbar_scroll'            => true,
                 'show_page_header_toolbar'  => $this->show_page_header_toolbar,

@@ -44,7 +44,9 @@
 		{$row}
 	{/foreach}
 
-	var product_tax = '{$tax_rates}';
+        var product_tax = '{$tax_rates}';
+        var affectingGroups = {$affecting_groups|@json_encode};
+        var imageOptions = '{$image_options|escape:'javascript'}';
   function calcPrice(element, element_has_tax) {
     var element_price = element.val().replace(/,/g, '.');
     var other_element_price = 0;
@@ -93,41 +95,50 @@
 					<button type="button" class="btn btn-default pull-right" onclick="add_attr_multiple();"><i class="icon-plus-sign"></i> {l s='Add'}</button>
 				</div>
 			</div>
-			<div class="col-lg-8 col-lg-offset-1">
-				<div class="alert alert-info">{l s='The Combinations Generator is a tool that allows you to easily create a series of combinations by selecting the related attributes. For example, if you\'re selling t-shirts in three different sizes and two different colors, the generator will create six combinations for you.'}</div>
+                        <div class="col-lg-9">
+                                {if $product_images|@count}
+                                        <div class="mb-3">
+                                                {foreach $product_images as $img}
+                                                        <img src="{$img.path}" alt="{$img.legend|escape:'html':'UTF-8'}" class="img-thumbnail" />
+                                                {/foreach}
+                                        </div>
+                                {else}
+                                        <div class="alert alert-warning">{l s='Currently no images are uploaded'}</div>
+                                {/if}
 
-				<div class="alert alert-info">{l s='You\'re currently generating combinations for the following product:'} <b>{$product_name|escape:'html':'UTF-8'}</b></div>
-
-				<div class="alert alert-info"><strong>{l s='Step 1: On the left side, select the attributes you want to use (Hold down the "Ctrl" key on your keyboard and validate by clicking on "Add")'}</strong></div>
+                                <div class="alert alert-info"><strong>{l s='Step 1: On the left side, select the attributes you want to use (Hold down the "Ctrl" key on your keyboard and validate by clicking on "Add")'}</strong></div>
 
 				{foreach $attribute_groups as $k => $attribute_group}
 					{if isset($attribute_js[$attribute_group['id_attribute_group']])}
 					<div class="row">
 						<table class="table" style="display:none">
 							<thead>
-								<tr>
-									<th class="fixed-width-md">
-										<span class="title_box">{$attribute_group['name']|escape:'html':'UTF-8'}</span>
-									</th>
-									<th>
-										<span class="title_box">{l s='Price tax excl [%s]' sprintf=[$currency_sign]}</span>
-									</th>
-									<th>
-										<span class="title_box">{l s='Price tax incl [%s]' sprintf=[$currency_sign]}</span>
-									</th>
-									<th>
-										<span class="title_box">{l s='Weight [%s]' sprintf=[$weight_unit]}</span>
-									</th>
-									<th>
-										<span class="title_box">{l s='Width [%s]' sprintf=[$dimension_unit]}</span>
-									</th>
-									<th>
-										<span class="title_box">{l s='Length [%s]' sprintf=[$dimension_unit]}</span>
-									</th>
-									<th>
-										<span class="title_box">{l s='Depth [%s]' sprintf=[$dimension_unit]}</span>
-									</th>
-								</tr>
+                                                                <tr>
+                                                                        <th class="fixed-width-md">
+                                                                                <span class="title_box">{$attribute_group['name']|escape:'html':'UTF-8'}</span>
+                                                                        </th>
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Price tax excl [%s]' sprintf=[$currency_sign]}</span>
+                                                                        </th>
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Price tax incl [%s]' sprintf=[$currency_sign]}</span>
+                                                                        </th>
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Weight [%s]' sprintf=[$weight_unit]}</span>
+                                                                        </th>
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Width [%s]' sprintf=[$dimension_unit]}</span>
+                                                                        </th>
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Length [%s]' sprintf=[$dimension_unit]}</span>
+                                                                        </th>
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Depth [%s]' sprintf=[$dimension_unit]}</span>
+                                                                        </th>
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Image'}</span>
+                                                                        </th>
+                                                                </tr>
 							</thead>
 							<tbody id="table_{$attribute_group['id_attribute_group']}" name="result_table">
 							</tbody>

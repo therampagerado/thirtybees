@@ -152,6 +152,11 @@ function create_attribute_row(id, idGroup, name, price, weight, width, height, d
   html += '<td><input type="text" value="' + width + '" name="width_impact_' + id + '"></td>';
   html += '<td><input type="text" value="' + height + '" name="height_impact_' + id + '"></td>';
   html += '<td><input type="text" value="' + depth + '" name="depth_impact_' + id + '"></td>';
+  if (typeof affectingGroups !== 'undefined' && affectingGroups.indexOf(parseInt(idGroup, 10)) !== -1) {
+    html += '<td><select name="image_' + id + '">' + imageOptions + '</select></td>';
+  } else {
+    html += '<td>-</td>';
+  }
   html += '</tr>';
 
   return html;
