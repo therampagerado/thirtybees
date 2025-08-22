@@ -142,7 +142,7 @@ function del_attr_multiple() {
   }
 }
 
-function create_attribute_row(id, idGroup, name, price, weight, width, height, depth) {
+function create_attribute_row(id, idGroup, name, price, weight, width, height, depth, affectsView) {
   var html = '';
   html += '<tr id="result_' + id + '">';
   html += '<td><input type="hidden" value="' + id + '" name="options[' + idGroup + '][' + id + ']" />' + name + '</td>';
@@ -152,6 +152,17 @@ function create_attribute_row(id, idGroup, name, price, weight, width, height, d
   html += '<td><input type="text" value="' + width + '" name="width_impact_' + id + '"></td>';
   html += '<td><input type="text" value="' + height + '" name="height_impact_' + id + '"></td>';
   html += '<td><input type="text" value="' + depth + '" name="depth_impact_' + id + '"></td>';
+  if (affectsView && window.product_images && window.product_images.length) {
+    html += '<td><select name="image_impact_' + id + '"><option value="0"></option>';
+    for (var i = 0; i < window.product_images.length; i++) {
+      var img = window.product_images[i];
+      var legend = img.legend ? img.legend : img.id_image;
+      html += '<option value="' + img.id_image + '">' + legend + '</option>';
+    }
+    html += '</select></td>';
+  } else if (affectsView) {
+    html += '<td></td>';
+  }
   html += '</tr>';
 
   return html;
@@ -172,7 +183,7 @@ function add_attr_multiple() {
       var name = elem.parentNode.getAttribute('name');
       target = $('#table_' + name);
       if (target && !getE('result_' + elem.getAttribute('name'))) {
-        newElem = create_attribute_row(elem.getAttribute('name'), elem.parentNode.getAttribute('name'), elem.value, '0.00', '0.00');
+        newElem = create_attribute_row(elem.getAttribute('name'), elem.parentNode.getAttribute('name'), elem.value, '0.00', '0.00', '0.00', '0.00', '0.00', elem.parentNode.getAttribute('data-affects-product-view'));
         target.append(newElem);
         toggle(target.parent()[0], true);
       }

@@ -30,7 +30,8 @@
     var priceDisplayPrecision = 0;
   {/if}
   var priceDatabasePrecision = {$smarty.const._TB_PRICE_DATABASE_PRECISION_};
-	var attrs = new Array();
+  var product_images = {$product_images|json_encode};
+        var attrs = new Array();
 	attrs[0] = new Array(0, '---');
 
 	{foreach $attribute_js as $idgrp => $group}
@@ -79,7 +80,7 @@
 					<select multiple name="attributes[]" id="attribute_group" style="height: 65vh">
 						{foreach $attribute_groups as $k => $attribute_group}
 							{if isset($attribute_js[$attribute_group['id_attribute_group']])}
-								<optgroup name="{$attribute_group['id_attribute_group']}" id="{$attribute_group['id_attribute_group']}" label="{$attribute_group['name']|escape:'html':'UTF-8'}">
+                                                                <optgroup name="{$attribute_group['id_attribute_group']}" id="{$attribute_group['id_attribute_group']}" label="{$attribute_group['name']|escape:'html':'UTF-8'}" data-affects-product-view="{$attribute_group['affects_product_view']}">
 									{foreach $attribute_js[$attribute_group['id_attribute_group']] as $k => $v}
 										<option name="{$k}" id="attr_{$k}" value="{$v|escape:'html':'UTF-8'}" title="{$v|escape:'html':'UTF-8'}">{$v|escape:'html':'UTF-8'}</option>
 									{/foreach}
@@ -93,12 +94,20 @@
 					<button type="button" class="btn btn-default pull-right" onclick="add_attr_multiple();"><i class="icon-plus-sign"></i> {l s='Add'}</button>
 				</div>
 			</div>
-			<div class="col-lg-8 col-lg-offset-1">
-				<div class="alert alert-info">{l s='The Combinations Generator is a tool that allows you to easily create a series of combinations by selecting the related attributes. For example, if you\'re selling t-shirts in three different sizes and two different colors, the generator will create six combinations for you.'}</div>
+                        <div class="col-lg-9">
+                                <div class="alert alert-info"><strong>{l s='Step 1: On the left side, select the attributes you want to use (Hold down the "Ctrl" key on your keyboard and validate by clicking on "Add")'}</strong></div>
 
-				<div class="alert alert-info">{l s='You\'re currently generating combinations for the following product:'} <b>{$product_name|escape:'html':'UTF-8'}</b></div>
-
-				<div class="alert alert-info"><strong>{l s='Step 1: On the left side, select the attributes you want to use (Hold down the "Ctrl" key on your keyboard and validate by clicking on "Add")'}</strong></div>
+                                {if $product_images|@count}
+                                <div class="form-group">
+                                        <ul class="list-inline">
+                                                {foreach $product_images as $img}
+                                                        <li><img src="{$link->getImageLink($product_link_rewrite, $img.id_image, 'small_default')}" alt="{$img.legend|escape:'html':'UTF-8'}" /></li>
+                                                {/foreach}
+                                        </ul>
+                                </div>
+                                {else}
+                                <div class="alert alert-info">{l s='Currently no images are uploaded'}</div>
+                                {/if}
 
 				{foreach $attribute_groups as $k => $attribute_group}
 					{if isset($attribute_js[$attribute_group['id_attribute_group']])}
@@ -124,9 +133,14 @@
 									<th>
 										<span class="title_box">{l s='Length [%s]' sprintf=[$dimension_unit]}</span>
 									</th>
-									<th>
-										<span class="title_box">{l s='Depth [%s]' sprintf=[$dimension_unit]}</span>
-									</th>
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Depth [%s]' sprintf=[$dimension_unit]}</span>
+                                                                        </th>
+                                                                        {if $attribute_group['affects_product_view']}
+                                                                        <th>
+                                                                                <span class="title_box">{l s='Image'}</span>
+                                                                        </th>
+                                                                        {/if}
 								</tr>
 							</thead>
 							<tbody id="table_{$attribute_group['id_attribute_group']}" name="result_table">
@@ -145,9 +159,10 @@
 												{$attribute['weight']},
 												{$attribute['width']},
 												{$attribute['height']},
-												{$attribute['depth']}
-											)
-									);
+                                                                                                {$attribute['depth']},
+                                                                                                {$attribute_group['affects_product_view']}
+                                                                                        )
+                                                                        );
 									toggle(getE('table_' + {$attribute_group['id_attribute_group']}).parentNode, true);
 								</script>
 							{/foreach}

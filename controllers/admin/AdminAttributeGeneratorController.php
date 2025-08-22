@@ -190,6 +190,31 @@ class AdminAttributeGeneratorControllerCore extends AdminController
                 }
                 $this->product->generateMultipleCombinations($values, $this->combinations);
 
+                // assign images to combinations based on selected attributes
+                $attributeImages = [];
+                foreach ($_POST as $key => $val) {
+                    if (preg_match('/^image_impact_(\\d+)$/', $key, $m)) {
+                        $attributeImages[(int)$m[1]] = (int)$val;
+                    }
+                }
+                if (!empty($attributeImages)) {
+                    foreach ($this->combinations as $attributesSet) {
+                        $imageIds = [];
+                        foreach ($attributesSet as $idAttr) {
+                            if (!empty($attributeImages[(int)$idAttr])) {
+                                $imageIds[] = (int)$attributeImages[(int)$idAttr];
+                            }
+                        }
+                        if ($imageIds) {
+                            $idCombination = (int)$this->product->productAttributeExists($attributesSet, false, null, true, true);
+                            if ($idCombination) {
+                                $combination = new Combination($idCombination);
+                                $combination->setImages(array_unique($imageIds));
+                            }
+                        }
+                    }
+                }
+
                 // Reset cached default attribute for the product and get a new one
                 Product::getDefaultAttribute($this->product->id, 0, true);
                 Product::updateDefaultAttribute($this->product->id);
@@ -265,6 +290,7 @@ class AdminAttributeGeneratorControllerCore extends AdminController
 
         $attributeGroups = AttributeGroup::getAttributesGroups($this->context->language->id);
         $this->product = new Product(Tools::getIntValue('id_product'));
+        $productImages = $this->product->getImages($this->context->language->id);
 
         $this->context->smarty->assign(
             [
@@ -273,6 +299,8 @@ class AdminAttributeGeneratorControllerCore extends AdminController
                 'combinations_size'         => count($this->combinations),
                 'product_name'              => $this->product->name[$this->context->language->id] ?? '',
                 'product_reference'         => $this->product->reference,
+                'product_link_rewrite'      => $this->product->link_rewrite[$this->context->language->id] ?? '',
+                'product_images'            => $productImages,
                 'url_generator'             => static::$currentIndex.'&id_product='.Tools::getIntValue('id_product').'&attributegenerator&token='.Tools::getValue('token'),
                 'attribute_groups'          => $attributeGroups,
                 'attribute_js'              => $attributeJs,
