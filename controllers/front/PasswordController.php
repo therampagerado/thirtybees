@@ -78,6 +78,10 @@ class PasswordControllerCore extends FrontController
                     $token = bin2hex(Tools::getBytes(32));
                     $customer->setResetPasswordToken($token, $tokenLifetime * 3600);
                     if ($customer->update()) {
+                        $ip = Tools::getRemoteAddr();
+                        $ua = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
+                        PrestaShopLogger::addLog('Password reset token issued for '.$customer->email.' from '.$ip.' ['.$ua.']', 1, null, 'Customer', (int)$customer->id);
+
                         $url = $this->context->link->getPageLink('password', true, null, 'token='.$token);
                         $mailParams = [
                             '{email}'           => $customer->email,
@@ -86,11 +90,7 @@ class PasswordControllerCore extends FrontController
                             '{url}'             => $url,
                             '{token_lifetime}'  => $tokenLifetime,
                         ];
-                        if (Mail::Send($this->context->language->id, 'password_query', Mail::l('Password query confirmation'), $mailParams, $customer->email, $customer->firstname.' '.$customer->lastname)) {
-                            $ip = Tools::getRemoteAddr();
-                            $ua = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
-                            PrestaShopLogger::addLog('Password reset token issued for '.$customer->email.' from '.$ip.' ['.$ua.']', 1, null, 'Customer', (int) $customer->id);
-                        }
+                        Mail::Send($this->context->language->id, 'password_query', Mail::l('Password query confirmation'), $mailParams, $customer->email, $customer->firstname.' '.$customer->lastname);
                     }
                 }
 
