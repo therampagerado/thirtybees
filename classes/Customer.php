@@ -65,6 +65,8 @@ class CustomerCore extends ObjectModel
             'show_public_prices'         => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'max_payment_days'           => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'copy_post' => false, 'dbDefault' => '60'],
             'secure_key'                 => ['type' => self::TYPE_STRING, 'validate' => 'isMd5', 'copy_post' => false, 'size' => 32, 'dbDefault' => '-1'],
+            'reset_password_token'       => ['type' => self::TYPE_STRING, 'copy_post' => false, 'size' => 64, 'dbNullable' => true],
+            'reset_password_validity'    => ['type' => self::TYPE_DATE, 'copy_post' => false, 'dbNullable' => true],
             'note'                       => ['type' => self::TYPE_HTML, 'validate' => 'isCleanHtml', 'copy_post' => false, 'size' => ObjectModel::SIZE_TEXT],
             'active'                     => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'is_guest'                   => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
@@ -80,6 +82,7 @@ class CustomerCore extends ObjectModel
                 'id_gender'          => ['type' => ObjectModel::KEY, 'columns' => ['id_gender']],
                 'id_shop'            => ['type' => ObjectModel::KEY, 'columns' => ['id_shop', 'date_add']],
                 'id_shop_group'      => ['type' => ObjectModel::KEY, 'columns' => ['id_shop_group']],
+                'reset_password_token'=> ['type' => ObjectModel::UNIQUE_KEY, 'columns' => ['reset_password_token']],
             ],
         ],
     ];
@@ -121,6 +124,10 @@ class CustomerCore extends ObjectModel
     public $id_shop_group;
     /** @var string Secure key */
     public $secure_key;
+    /** @var string Password reset token */
+    public $reset_password_token;
+    /** @var string Password reset token validity */
+    public $reset_password_validity;
     /** @var string protected note */
     public $note;
     /** @var int Gender ID */
@@ -1386,5 +1393,45 @@ class CustomerCore extends ObjectModel
         // delete source customer
         $source->delete();
 
+    }
+
+    /**
+     * Generate new password reset token
+     *
+     * @param int|null $ttl Token lifetime in seconds
+     *
+     * @return string Generated token
+     *
+     * @throws PrestaShopException
+     */
+    public function generatePasswordResetToken($ttl = null)
+    {
+        if ($ttl === null) {
+            $ttl = (int) Configuration::get('TB_PASSWD_RESET_TOKEN_LIFETIME') * 60;
+        }
+        $token = Tools::passwdGen(64, 'RANDOM');
+        $validity = date('Y-m-d H:i:s', time() + (int) $ttl);
+        Db::getInstance()->update('customer', [
+            'reset_password_token'    => pSQL($token),
+            'reset_password_validity' => pSQL($validity),
+        ], 'id_customer='.(int) $this->id);
+        $this->reset_password_token = $token;
+        $this->reset_password_validity = $validity;
+        return $token;
+    }
+
+    /**
+     * Clear existing password reset token
+     *
+     * @return void
+     */
+    public function clearPasswordResetToken()
+    {
+        Db::getInstance()->update('customer', [
+            'reset_password_token'    => null,
+            'reset_password_validity' => null,
+        ], 'id_customer='.(int) $this->id);
+        $this->reset_password_token = null;
+        $this->reset_password_validity = null;
     }
 }
