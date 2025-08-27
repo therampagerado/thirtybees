@@ -982,35 +982,51 @@ class CustomerCore extends ObjectModel
 
     /**
      * @param int $idLang
-     * @param string|null $password
      *
      * @return bool
      *
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
-    public function transformToCustomer($idLang, $password = null)
+    public function transformToCustomer($idLang)
     {
         if (!$this->isGuest()) {
             return false;
         }
-        if (empty($password)) {
-            $password = Tools::passwdGen(8, 'RANDOM');
-        }
-        if (!Validate::isPasswd($password)) {
-            return false;
-        }
 
         $this->is_guest = 0;
-        $this->passwd = Tools::hash($password);
+        $this->passwd = Tools::hash(Tools::passwdGen(8, 'RANDOM'));
+
+        $tokenLifetime = (int) Configuration::get('TB_GUEST_TO_CUSTOMER_TOKEN_TTL');
+        if ($tokenLifetime <= 0) {
+            $tokenLifetime = 1;
+        }
+
+        $token = bin2hex(Tools::getBytes(32));
+        $this->setResetPasswordToken($token, $tokenLifetime * 3600);
+
         $this->cleanGroups();
         $this->addGroups([Configuration::get('PS_CUSTOMER_GROUP')]); // add default customer group
+
         if ($this->update()) {
+            $ip = Tools::getRemoteAddr();
+            $ua = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
+            Logger::addLog(
+                'Password reset token issued for '.$this->email.' from '.$ip.' ['.$ua.']',
+                1,
+                null,
+                'Customer',
+                (int) $this->id,
+                true
+            );
+
+            $url = Context::getContext()->link->getPageLink('password', true, null, 'token='.$token);
             $vars = [
-                '{firstname}' => $this->firstname,
-                '{lastname}'  => $this->lastname,
-                '{email}'     => $this->email,
-                '{passwd}'    => '*******',
+                '{firstname}'      => $this->firstname,
+                '{lastname}'       => $this->lastname,
+                '{email}'          => $this->email,
+                '{url}'            => $url,
+                '{token_lifetime}' => $tokenLifetime,
             ];
 
             Mail::Send(
