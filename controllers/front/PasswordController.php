@@ -68,7 +68,15 @@ class PasswordControllerCore extends FrontController
                 } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('PS_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
                     $this->errors[] = sprintf(Tools::displayError('You can regenerate your password only every %d minute(s)'), (int) $minTime);
                 } else {
-                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->secure_key.'&id_customer='.(int) $customer->id);
+                    $resetOnRequest = Configuration::get('PS_PASSWD_RESET_TOKEN_ON_REQUEST');
+                    if ($resetOnRequest === false || (int) $resetOnRequest || !$customer->reset_password_token || strtotime($customer->reset_password_validity) < time()) {
+                        $ttl = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
+                        if (!$ttl) {
+                            $ttl = 3600;
+                        }
+                        $customer->generateResetPasswordToken($ttl);
+                    }
+                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->reset_password_token.'&id_customer='.(int) $customer->id);
                     $mailParams = [
                         '{email}'     => $customer->email,
                         '{lastname}'  => $customer->lastname,
@@ -143,6 +151,10 @@ class PasswordControllerCore extends FrontController
         $customer->passwd = Tools::hash($password);
         $customer->last_passwd_gen = date('Y-m-d H:i:s', time());
         if ($customer->update()) {
+            $resetOnSuccess = Configuration::get('PS_PASSWD_RESET_TOKEN_ON_SUCCESS');
+            if ($resetOnSuccess === false || (int) $resetOnSuccess) {
+                $customer->clearResetPasswordToken();
+            }
             Hook::triggerEvent('actionPasswordRenew', [
                 'customer' => $customer,
                 'password' => $password
@@ -183,26 +195,17 @@ class PasswordControllerCore extends FrontController
         $token = Tools::getValue('token');
         $idCustomer = Tools::getIntValue('id_customer');
         if ($token && $idCustomer) {
-            $email = Db::readOnly()->getValue(
-                (new DbQuery())
-                    ->select('c.`email`')
-                    ->from('customer', 'c')
-                    ->where('c.`secure_key` = \''.pSQL($token).'\'')
-                    ->where('c.`id_customer` = '.(int) $idCustomer)
-            );
-            if ($email) {
-                $customer = new Customer();
-                $customer->getByemail($email);
-                if (!Validate::isLoadedObject($customer)) {
-                    throw new PrestaShopException(Tools::displayError('Customer account not found'));
-                }
-                if (!$customer->active) {
-                    throw new PrestaShopException(Tools::displayError('You cannot regenerate the password for this account.'));
-                }
-                return $customer;
-            } else {
+            $customer = new Customer((int) $idCustomer);
+            if (!Validate::isLoadedObject($customer)) {
+                throw new PrestaShopException(Tools::displayError('Customer account not found'));
+            }
+            if (!$customer->active) {
+                throw new PrestaShopException(Tools::displayError('You cannot regenerate the password for this account.'));
+            }
+            if (!$customer->reset_password_token || !$customer->reset_password_validity || !hash_equals($customer->reset_password_token, $token) || strtotime($customer->reset_password_validity) < time()) {
                 throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
             }
+            return $customer;
         }
         if ($token || $idCustomer) {
             throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));

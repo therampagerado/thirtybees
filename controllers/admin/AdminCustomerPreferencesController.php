@@ -128,6 +128,47 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 ],
                 'submit' => ['title' => $this->l('Save')],
             ],
+            'password_token' => [
+                'title' => $this->l('Password reset token'),
+                'icon'  => 'icon-key',
+                'fields' => [
+                    'PS_PASSWD_RESET_TOKEN_LIFETIME' => [
+                        'title'      => $this->l('Token lifetime'),
+                        'validation' => 'isUnsignedInt',
+                        'cast'       => 'intval',
+                        'type'       => 'text',
+                        'size'       => 5,
+                        'suffix'     => $this->l('minutes'),
+                    ],
+                    'PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME' => [
+                        'title'      => $this->l('Guest conversion token lifetime'),
+                        'validation' => 'isUnsignedInt',
+                        'cast'       => 'intval',
+                        'type'       => 'text',
+                        'size'       => 5,
+                        'suffix'     => $this->l('minutes'),
+                    ],
+                    'PS_PASSWD_RESET_TOKEN_ON_LOGIN' => [
+                        'title'      => $this->l('Reset token on login'),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                        'type'       => 'bool',
+                    ],
+                    'PS_PASSWD_RESET_TOKEN_ON_REQUEST' => [
+                        'title'      => $this->l('Reset token on request'),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                        'type'       => 'bool',
+                    ],
+                    'PS_PASSWD_RESET_TOKEN_ON_SUCCESS' => [
+                        'title'      => $this->l('Reset token after password change'),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                        'type'       => 'bool',
+                    ],
+                ],
+                'submit' => ['title' => $this->l('Save')],
+            ],
         ];
     }
 

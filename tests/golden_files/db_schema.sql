@@ -712,6 +712,8 @@ CREATE TABLE `PREFIX_customer` (
   `show_public_prices` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `max_payment_days` int(11) unsigned NOT NULL DEFAULT '60',
   `secure_key` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '-1',
+  `reset_password_token` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reset_password_validity` datetime DEFAULT NULL,
   `note` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `active` tinyint(1) unsigned NOT NULL DEFAULT '0',
   `is_guest` tinyint(1) NOT NULL DEFAULT '0',
