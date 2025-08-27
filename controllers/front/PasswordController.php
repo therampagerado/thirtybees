@@ -80,7 +80,14 @@ class PasswordControllerCore extends FrontController
                     if ($customer->update()) {
                         $ip = Tools::getRemoteAddr();
                         $ua = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
-                        PrestaShopLogger::addLog('Password reset token issued for '.$customer->email.' from '.$ip.' ['.$ua.']', 1, null, 'Customer', (int)$customer->id);
+                        Logger::addLog(
+                            'Password reset token issued for '.$customer->email.' from '.$ip.' ['.$ua.']',
+                            1,
+                            null,
+                            'Customer',
+                            (int)$customer->id,
+                            true
+                        );
 
                         $url = $this->context->link->getPageLink('password', true, null, 'token='.$token);
                         $mailParams = [
