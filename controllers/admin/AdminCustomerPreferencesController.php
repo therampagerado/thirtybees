@@ -135,6 +135,7 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 'PS_PASSWD_TIME_FRONT'         => [
                     'title'      => $this->l('Password reset delay'),
                     'hint'       => $this->l('Minimum time required between two requests for a password reset.'),
+                    'desc'       => $this->l('Assign minimum time (in minutes) between two password reset attempts. Use only if you notice lots of spam in this function in your Advanced Parameter - Logs section.'),
                     'validation' => 'isUnsignedInt',
                     'cast'       => 'intval',
                     'size'       => 5,
@@ -144,7 +145,7 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 'TB_PASSWD_RESET_TOKEN_TTL' => [
                     'title'      => $this->l('Password reset token lifetime'),
                     'hint'       => $this->l('Lifetime in hours of the password reset token.'),
-                    'desc'       => $this->l('Tokens expire after this delay and the value must be greater than 0.'),
+                    'desc'       => $this->l('Tokens expire after this delay. Enter a whole number of hours (minimum 1).'),
                     'validation' => 'isUnsignedInt',
                     'cast'       => 'intval',
                     'size'       => 5,
@@ -154,7 +155,7 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 'TB_GUEST_TO_CUSTOMER_TOKEN_TTL' => [
                     'title'      => $this->l('Guest to customer token lifetime'),
                     'hint'       => $this->l('Lifetime in hours of guest to customer tokens.'),
-                    'desc'       => $this->l('Tokens expire after this delay and the value must be greater than 0.'),
+                    'desc'       => $this->l('Tokens expire after this delay. Enter a whole number of hours (minimum 1).'),
                     'validation' => 'isUnsignedInt',
                     'cast'       => 'intval',
                     'size'       => 5,
