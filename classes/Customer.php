@@ -65,8 +65,8 @@ class CustomerCore extends ObjectModel
             'show_public_prices'         => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'max_payment_days'           => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'copy_post' => false, 'dbDefault' => '60'],
             'secure_key'                 => ['type' => self::TYPE_STRING, 'validate' => 'isMd5', 'copy_post' => false, 'size' => 32, 'dbDefault' => '-1'],
-            'reset_password_token'       => ['type' => self::TYPE_STRING, 'copy_post' => false, 'size' => 64],
-            'reset_password_validity'    => ['type' => self::TYPE_DATE, 'copy_post' => false],
+            'reset_password_token'       => ['type' => self::TYPE_STRING, 'validate' => 'isSha256', 'copy_post' => false, 'size' => 64],
+            'reset_password_validity'    => ['type' => self::TYPE_DATE, 'validate' => 'isDateOrNull', 'copy_post' => false],
             'note'                       => ['type' => self::TYPE_HTML, 'validate' => 'isCleanHtml', 'copy_post' => false, 'size' => ObjectModel::SIZE_TEXT],
             'active'                     => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'is_guest'                   => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
@@ -123,9 +123,9 @@ class CustomerCore extends ObjectModel
     public $id_shop_group;
     /** @var string Secure key */
     public $secure_key;
-    /** @var string Password reset token */
+    /** @var string Password reset token hash */
     public $reset_password_token;
-    /** @var string Password reset token expiration */
+    /** @var string|null Password reset token expiration */
     public $reset_password_validity;
     /** @var string protected note */
     public $note;
@@ -1006,15 +1006,14 @@ class CustomerCore extends ObjectModel
         if ($this->update()) {
             $guestTtl = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME');
             if (!$guestTtl) {
-                $guestTtl = 86400;
+                $guestTtl = 24;
             }
-            $this->generateResetPasswordToken($guestTtl);
+            $token = $this->generateResetPasswordToken($guestTtl * 3600);
             $vars = [
                 '{firstname}' => $this->firstname,
                 '{lastname}'  => $this->lastname,
                 '{email}'     => $this->email,
-                '{passwd}'    => '*******',
-                '{url}'       => Context::getContext()->link->getPageLink('password', true, null, 'token=' . $this->reset_password_token . '&id_customer=' . (int)$this->id),
+                '{url}'       => Context::getContext()->link->getPageLink('password', true, null, 'token=' . $token . '&id_customer=' . (int)$this->id),
             ];
 
             Mail::Send(
@@ -1032,6 +1031,7 @@ class CustomerCore extends ObjectModel
                 false,
                 (int) $this->id_shop
             );
+            PrestaShopLogger::addLog(sprintf('Password reset token issued for %s from %s [%s]', $this->email, Tools::getRemoteAddr(), isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : ''), 1, null, 'Customer', (int) $this->id, true);
 
             return true;
         }
@@ -1044,7 +1044,7 @@ class CustomerCore extends ObjectModel
      *
      * @param int|null $ttl Token lifetime in seconds
      *
-     * @return bool
+     * @return string Generated token
      * @throws Exception
      */
     public function generateResetPasswordToken($ttl = null)
@@ -1052,14 +1052,18 @@ class CustomerCore extends ObjectModel
         if ($ttl === null) {
             $ttl = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
             if (!$ttl) {
-                $ttl = 3600;
+                $ttl = 1;
             }
+            $ttl *= 3600;
         }
 
-        $this->reset_password_token = bin2hex(random_bytes(16));
+        $token = bin2hex(random_bytes(32));
+        $this->reset_password_token = hash('sha256', $token);
         $this->reset_password_validity = date('Y-m-d H:i:s', time() + (int) $ttl);
 
-        return $this->update();
+        $this->update();
+
+        return $token;
     }
 
     /**

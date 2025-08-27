@@ -758,7 +758,19 @@ class ValidateCore
         }
 
         return ($matches[1] === 0 && $matches[2] === 0 && $matches[3] === 0)
-               || checkdate($matches[2], $matches[3], $matches[1]);
+            || checkdate($matches[2], $matches[3], $matches[1]);
+    }
+
+    /**
+     * Check for date validity or allow null values
+     *
+     * @param string|null $date Date to validate
+     *
+     * @return bool
+     */
+    public static function isDateOrNull($date)
+    {
+        return $date === null || $date === '' || static::isDate($date);
     }
 
     /**

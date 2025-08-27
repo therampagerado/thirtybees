@@ -133,43 +133,64 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 'icon'  => 'icon-key',
                 'fields' => [
                     'PS_PASSWD_RESET_TOKEN_LIFETIME' => [
-                        'title'      => $this->l('Token lifetime'),
-                        'validation' => 'isUnsignedInt',
-                        'cast'       => 'intval',
-                        'type'       => 'text',
-                        'size'       => 5,
-                        'suffix'     => $this->l('minutes'),
+                        'title'       => $this->l('Token lifetime'),
+                        'validation'  => 'isUnsignedInt',
+                        'cast'        => 'intval',
+                        'type'        => 'text',
+                        'size'        => 5,
+                        'suffix'      => $this->l('hours'),
+                        'defaultValue'=> 1,
                     ],
                     'PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME' => [
-                        'title'      => $this->l('Guest conversion token lifetime'),
-                        'validation' => 'isUnsignedInt',
-                        'cast'       => 'intval',
-                        'type'       => 'text',
-                        'size'       => 5,
-                        'suffix'     => $this->l('minutes'),
+                        'title'       => $this->l('Guest conversion token lifetime'),
+                        'validation'  => 'isUnsignedInt',
+                        'cast'        => 'intval',
+                        'type'        => 'text',
+                        'size'        => 5,
+                        'suffix'      => $this->l('hours'),
+                        'defaultValue'=> 24,
                     ],
                     'PS_PASSWD_RESET_TOKEN_ON_LOGIN' => [
-                        'title'      => $this->l('Reset token on login'),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                        'type'       => 'bool',
+                        'title'       => $this->l('Reset token on login'),
+                        'validation'  => 'isBool',
+                        'cast'        => 'intval',
+                        'type'        => 'bool',
+                        'defaultValue'=> 1,
                     ],
-                    'PS_PASSWD_RESET_TOKEN_ON_REQUEST' => [
-                        'title'      => $this->l('Reset token on request'),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                        'type'       => 'bool',
+                    'PS_PASSWD_RESET_REQUEST_LIMIT' => [
+                        'title'       => $this->l('Max reset requests per hour'),
+                        'validation'  => 'isUnsignedInt',
+                        'cast'        => 'intval',
+                        'type'        => 'text',
+                        'size'        => 5,
+                        'defaultValue'=> 3,
                     ],
-                    'PS_PASSWD_RESET_TOKEN_ON_SUCCESS' => [
-                        'title'      => $this->l('Reset token after password change'),
-                        'validation' => 'isBool',
-                        'cast'       => 'intval',
-                        'type'       => 'bool',
+                ],
+                'buttons' => [
+                    [
+                        'title' => $this->l('Revoke all reset tokens'),
+                        'icon'  => 'process-icon-eraser',
+                        'name'  => 'submitResetPasswordTokens',
+                        'class' => 'btn btn-danger pull-right',
                     ],
                 ],
                 'submit' => ['title' => $this->l('Save')],
             ],
         ];
+    }
+
+    /**
+     * @return mixed
+     * @throws PrestaShopException
+     */
+    public function postProcess()
+    {
+        if (Tools::isSubmit('submitResetPasswordTokens')) {
+            Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'customer` SET `reset_password_token` = NULL, `reset_password_validity` = NULL');
+            $this->confirmations[] = $this->l('All password reset tokens have been revoked.');
+        }
+
+        return parent::postProcess();
     }
 
     /**
