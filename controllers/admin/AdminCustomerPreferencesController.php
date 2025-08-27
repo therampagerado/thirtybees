@@ -138,8 +138,8 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                         'cast'        => 'intval',
                         'type'        => 'text',
                         'size'        => 5,
-                        'suffix'      => $this->l('hours'),
-                        'defaultValue'=> 1,
+                        'suffix'      => $this->l('minutes'),
+                        'defaultValue'=> 60,
                     ],
                     'PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME' => [
                         'title'       => $this->l('Guest conversion token lifetime'),
@@ -147,8 +147,8 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                         'cast'        => 'intval',
                         'type'        => 'text',
                         'size'        => 5,
-                        'suffix'      => $this->l('hours'),
-                        'defaultValue'=> 24,
+                        'suffix'      => $this->l('minutes'),
+                        'defaultValue'=> 1440,
                     ],
                     'PS_PASSWD_RESET_TOKEN_ON_LOGIN' => [
                         'title'       => $this->l('Reset token on login'),

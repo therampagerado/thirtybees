@@ -1004,16 +1004,16 @@ class CustomerCore extends ObjectModel
         $this->cleanGroups();
         $this->addGroups([Configuration::get('PS_CUSTOMER_GROUP')]); //associate to Customer group
         if ($this->update()) {
-            $guestTtl = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME');
-            if (!$guestTtl) {
-                $guestTtl = 24;
+            $guestTtlMinutes = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME');
+            if (!$guestTtlMinutes) {
+                $guestTtlMinutes = 1440;
             }
-            $token = $this->generateResetPasswordToken($guestTtl * 3600);
+            $token = $this->generateResetPasswordToken($guestTtlMinutes * 60);
             $vars = [
                 '{firstname}' => $this->firstname,
                 '{lastname}'  => $this->lastname,
                 '{email}'     => $this->email,
-                '{url}'       => Context::getContext()->link->getPageLink('password', true, null, 'token=' . $token . '&id_customer=' . (int)$this->id),
+                '{url}'       => Context::getContext()->link->getPageLink('password', true, null, 'token=' . rawurlencode($token)),
             ];
 
             Mail::Send(
@@ -1050,11 +1050,11 @@ class CustomerCore extends ObjectModel
     public function generateResetPasswordToken($ttl = null)
     {
         if ($ttl === null) {
-            $ttl = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
-            if (!$ttl) {
-                $ttl = 1;
+            $ttlMinutes = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
+            if (!$ttlMinutes) {
+                $ttlMinutes = 60;
             }
-            $ttl *= 3600;
+            $ttl = $ttlMinutes * 60;
         }
 
         $token = bin2hex(random_bytes(32));
@@ -1077,6 +1077,30 @@ class CustomerCore extends ObjectModel
         $this->reset_password_validity = null;
 
         return $this->update();
+    }
+
+    /**
+     * Retrieve customer by valid reset password token
+     *
+     * @param string $token Raw reset token
+     *
+     * @return Customer|false
+     */
+    public static function getByValidResetPasswordToken($token)
+    {
+        $hash = hash('sha256', $token);
+        $sql = new DbQuery();
+        $sql->select('c.*');
+        $sql->from('customer', 'c');
+        $sql->where('c.reset_password_token = \'' . pSQL($hash) . '\'');
+        $sql->where('c.reset_password_validity >= NOW()');
+        $row = Db::getInstance()->getRow($sql);
+        if (!$row) {
+            return false;
+        }
+        $customer = new self();
+        $customer->hydrate($row);
+        return $customer;
     }
 
     /**

@@ -72,20 +72,24 @@ class PasswordControllerCore extends FrontController
                     $ip = Tools::getRemoteAddr();
                     if ($limit) {
                         $oneHourAgo = date('Y-m-d H:i:s', time() - 3600);
-                        $emailCount = (int) Db::getInstance()->getValue('SELECT COUNT(*) FROM `'._DB_PREFIX_.'log` WHERE object_type = "PwdResetEmail" AND message = \''.pSQL($email).'\' AND date_add > \''.pSQL($oneHourAgo).'\'');
-                        $ipCount = (int) Db::getInstance()->getValue('SELECT COUNT(*) FROM `'._DB_PREFIX_.'log` WHERE object_type = "PwdResetIp" AND message = \''.pSQL($ip).'\' AND date_add > \''.pSQL($oneHourAgo).'\'');
-                        if ($emailCount >= $limit || $ipCount >= $limit) {
+                        $query = new DbQuery();
+                        $query->select('COUNT(*)');
+                        $query->from('log');
+                        $query->where("object_type = 'PwdResetEmail'");
+                        $query->where('message = \''.pSQL($email).'\'');
+                        $query->where('date_add > \''.pSQL($oneHourAgo).'\'');
+                        $emailCount = (int) Db::getInstance()->getValue($query);
+                        if ($emailCount >= $limit) {
                             $this->errors[] = Tools::displayError('Too many password reset requests. Please try again later.');
                         }
                     }
                     if (empty($this->errors)) {
-                        $ttl = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
-                        if (!$ttl) {
-                            $ttl = 1;
+                        $ttlMinutes = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
+                        if (!$ttlMinutes) {
+                            $ttlMinutes = 60;
                         }
-                        $ttl *= 3600;
-                        $token = $customer->generateResetPasswordToken($ttl);
-                        $url = $this->context->link->getPageLink('password', true, null, 'token='.$token.'&id_customer='.(int) $customer->id);
+                        $token = $customer->generateResetPasswordToken($ttlMinutes * 60);
+                        $url = $this->context->link->getPageLink('password', true, null, 'token=' . rawurlencode($token));
                         $mailParams = [
                             '{email}'     => $customer->email,
                             '{lastname}'  => $customer->lastname,
@@ -98,7 +102,6 @@ class PasswordControllerCore extends FrontController
                                 'customer_email' => $customer->email
                             ]);
                             PrestaShopLogger::addLog($email, 1, null, 'PwdResetEmail', 0, true);
-                            PrestaShopLogger::addLog($ip, 1, null, 'PwdResetIp', 0, true);
                             PrestaShopLogger::addLog(sprintf('Password reset token issued for %s from %s [%s]', $customer->email, $ip, isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : ''), 1, null, 'Customer', (int) $customer->id, true);
                         } else {
                             $this->errors[] = Tools::displayError('An error occurred while sending the email.');
@@ -204,25 +207,15 @@ class PasswordControllerCore extends FrontController
     protected static function resolveCustomer()
     {
         $token = Tools::getValue('token');
-        $idCustomer = Tools::getIntValue('id_customer');
-        if ($token && $idCustomer) {
+        if ($token) {
             if (!Validate::isSha256($token)) {
-                throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
+                throw new PrestaShopException(Tools::displayError('Your password reset link is invalid or expired. Please request a new one.'));
             }
-            $customer = new Customer((int) $idCustomer);
-            if (!Validate::isLoadedObject($customer)) {
-                throw new PrestaShopException(Tools::displayError('Customer account not found'));
-            }
-            if (!$customer->active) {
-                throw new PrestaShopException(Tools::displayError('You cannot regenerate the password for this account.'));
-            }
-            if (!$customer->reset_password_token || !$customer->reset_password_validity || !hash_equals($customer->reset_password_token, hash('sha256', $token)) || strtotime($customer->reset_password_validity) < time()) {
-                throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
+            $customer = Customer::getByValidResetPasswordToken($token);
+            if (!$customer || !$customer->active || !hash_equals($customer->reset_password_token, hash('sha256', $token))) {
+                throw new PrestaShopException(Tools::displayError('Your password reset link is invalid or expired. Please request a new one.'));
             }
             return $customer;
-        }
-        if ($token || $idCustomer) {
-            throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
         }
         return false;
     }

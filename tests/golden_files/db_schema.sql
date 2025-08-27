@@ -723,6 +723,7 @@ CREATE TABLE `PREFIX_customer` (
   PRIMARY KEY (`id_customer`),
   KEY `customer_email` (`email`),
   KEY `customer_login` (`email`,`passwd`),
+  UNIQUE KEY `reset_password_token` (`reset_password_token`),
   KEY `id_customer_passwd` (`id_customer`,`passwd`),
   KEY `id_gender` (`id_gender`),
   KEY `id_shop` (`id_shop`,`date_add`),

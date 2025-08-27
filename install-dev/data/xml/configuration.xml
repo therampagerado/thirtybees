@@ -141,10 +141,10 @@
       <value>360</value>
     </configuration>
     <configuration id="PS_PASSWD_RESET_TOKEN_LIFETIME" name="PS_PASSWD_RESET_TOKEN_LIFETIME">
-      <value>1</value>
+      <value>60</value>
     </configuration>
     <configuration id="PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME" name="PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME">
-      <value>24</value>
+      <value>1440</value>
     </configuration>
     <configuration id="PS_PASSWD_RESET_TOKEN_ON_LOGIN" name="PS_PASSWD_RESET_TOKEN_ON_LOGIN">
       <value>1</value>
