@@ -95,7 +95,7 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                         'cast'       => 'intval',
                         'type'       => 'bool',
                     ],
-                    'TB_PASSWD_TIME_FRONT'         => [
+                    'PS_PASSWD_TIME_FRONT'         => [
                         'title'      => $this->l('Password reset delay'),
                         'hint'       => $this->l('Minimum time required between two requests for a password reset.'),
                         'validation' => 'isUnsignedInt',
@@ -188,6 +188,8 @@ class AdminCustomerPreferencesControllerCore extends AdminController
         if (Tools::isSubmit('submitResetPasswordTokens')) {
             Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'customer` SET `reset_password_token` = NULL, `reset_password_validity` = NULL');
             $this->confirmations[] = $this->l('All password reset tokens have been revoked.');
+
+            return;
         }
 
         return parent::postProcess();

@@ -300,7 +300,7 @@ class AdminLoginControllerCore extends AdminController
             } else {
                 $employeeExists = $employee->getByEmail($email);
                 if ($employeeExists) {
-                    $nextEmailTime = strtotime($employee->last_passwd_gen.'+'.Configuration::get('TB_PASSWD_TIME_BACK').' minutes');
+                    $nextEmailTime = strtotime($employee->last_passwd_gen.'+'.Configuration::get('PS_PASSWD_TIME_BACK').' minutes');
                 }
             }
         }
@@ -329,7 +329,7 @@ class AdminLoginControllerCore extends AdminController
         if (!count($this->errors)) {
             $this->ajaxDie(json_encode([
                 'hasErrors' => false,
-                'confirm'   => sprintf($this->l('A new password has been emailed to the given email address, if it wasn\'t done within the last %s minutes before.', 'AdminTab', false, false), Configuration::get('TB_PASSWD_TIME_BACK')),
+                'confirm'   => sprintf($this->l('A new password has been emailed to the given email address, if it wasn\'t done within the last %s minutes before.', 'AdminTab', false, false), Configuration::get('PS_PASSWD_TIME_BACK')),
             ]));
         } elseif (Tools::isSubmit('ajax')) {
             $this->ajaxDie(json_encode(['hasErrors' => true, 'errors' => $this->errors]));

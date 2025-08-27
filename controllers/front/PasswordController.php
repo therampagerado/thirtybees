@@ -65,7 +65,7 @@ class PasswordControllerCore extends FrontController
                     $this->errors[] = Tools::displayError('There is no account registered for this email address.');
                 } elseif (!$customer->active) {
                     $this->errors[] = Tools::displayError('You cannot regenerate the password for this account.');
-                } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('TB_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
+                } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('PS_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
                     $this->errors[] = sprintf(Tools::displayError('You can regenerate your password only every %d minute(s)'), (int) $minTime);
                 } else {
                     $limit = (int) Configuration::get('TB_PASSWD_RESET_REQUEST_LIMIT');
@@ -117,7 +117,7 @@ class PasswordControllerCore extends FrontController
                 $this->ajaxDie(json_encode($return));
             }
         } elseif ($customer = $this->getCustomer()) {
-            if ((strtotime($customer->last_passwd_gen.'+'.(int) Configuration::get('TB_PASSWD_TIME_FRONT').' minutes') - time()) > 0) {
+            if ((strtotime($customer->last_passwd_gen.'+'.(int) Configuration::get('PS_PASSWD_TIME_FRONT').' minutes') - time()) > 0) {
                 Tools::redirect('index.php?controller=authentication&error_regen_pwd');
             } else {
                 $password = Tools::getValue('password');
@@ -206,19 +206,24 @@ class PasswordControllerCore extends FrontController
      */
     protected static function resolveCustomer()
     {
-        $token = Tools::getValue('token');
+        $context = Context::getContext();
+        $token = Tools::getValue('token', $context->cookie->__isset('reset_password_token') ? $context->cookie->reset_password_token : null);
         if ($token) {
             if (!Validate::isSha256($token)) {
+                $context->cookie->__unset('reset_password_token');
                 throw new PrestaShopException(Tools::displayError('Your password reset link is invalid or expired. Please request a new one.'));
             }
             $customer = Customer::getByValidResetPasswordToken($token);
             if (!$customer || !$customer->active || !hash_equals($customer->reset_password_token, hash('sha256', $token))) {
+                $context->cookie->__unset('reset_password_token');
                 throw new PrestaShopException(Tools::displayError('Your password reset link is invalid or expired. Please request a new one.'));
             }
+            $context->cookie->reset_password_token = $token;
             // expose raw token for subsequent form submission
             $customer->reset_password_token = $token;
             return $customer;
         }
+        $context->cookie->__unset('reset_password_token');
         return false;
     }
 

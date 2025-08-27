@@ -134,10 +134,10 @@
     <configuration id="PS_INVOICE" name="PS_INVOICE">
       <value>1</value>
     </configuration>
-    <configuration id="TB_PASSWD_TIME_BACK" name="TB_PASSWD_TIME_BACK">
+    <configuration id="PS_PASSWD_TIME_BACK" name="PS_PASSWD_TIME_BACK">
       <value>360</value>
     </configuration>
-    <configuration id="TB_PASSWD_TIME_FRONT" name="TB_PASSWD_TIME_FRONT">
+    <configuration id="PS_PASSWD_TIME_FRONT" name="PS_PASSWD_TIME_FRONT">
       <value>360</value>
     </configuration>
     <configuration id="TB_PASSWD_RESET_TOKEN_LIFETIME" name="TB_PASSWD_RESET_TOKEN_LIFETIME">

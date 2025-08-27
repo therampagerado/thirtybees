@@ -536,7 +536,7 @@ class CustomerCore extends ObjectModel
         $this->id_lang = ($this->id_lang) ? $this->id_lang : Context::getContext()->language->id;
         $this->birthday = (empty($this->years) ? $this->birthday : (int) $this->years.'-'.(int) $this->months.'-'.(int) $this->days);
         $this->secure_key = md5(uniqid(rand(), true));
-        $this->last_passwd_gen = date('Y-m-d H:i:s', strtotime('-'.Configuration::get('TB_PASSWD_TIME_FRONT').'minutes'));
+        $this->last_passwd_gen = date('Y-m-d H:i:s', strtotime('-'.Configuration::get('PS_PASSWD_TIME_FRONT').'minutes'));
 
         if ($this->newsletter && !Validate::isDate($this->newsletter_date_add)) {
             $this->newsletter_date_add = date('Y-m-d H:i:s');
@@ -1076,7 +1076,14 @@ class CustomerCore extends ObjectModel
         $this->reset_password_token = null;
         $this->reset_password_validity = null;
 
-        return $this->update();
+        $result = $this->update();
+
+        $context = Context::getContext();
+        if ($context->cookie->__isset('reset_password_token')) {
+            $context->cookie->__unset('reset_password_token');
+        }
+
+        return $result;
     }
 
     /**
