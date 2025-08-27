@@ -128,6 +128,31 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 ],
                 'submit' => ['title' => $this->l('Save')],
             ],
+            'password_reset' => [
+                'title' => $this->l('Password reset tokens'),
+                'icon'  => 'icon-key',
+                'fields' => [
+                    'PS_PASSWD_RESET_TOKEN_TTL' => [
+                        'title'      => $this->l('Customer token lifetime'),
+                        'hint'       => $this->l('Validity of password reset tokens in minutes.'),
+                        'validation' => 'isUnsignedInt',
+                        'cast'       => 'intval',
+                        'type'       => 'text',
+                        'size'       => 5,
+                        'suffix'     => $this->l('minutes'),
+                    ],
+                    'PS_GUEST_PASSWD_RESET_TOKEN_TTL' => [
+                        'title'      => $this->l('Guest token lifetime'),
+                        'hint'       => $this->l('Validity of guest-to-customer tokens in minutes.'),
+                        'validation' => 'isUnsignedInt',
+                        'cast'       => 'intval',
+                        'type'       => 'text',
+                        'size'       => 5,
+                        'suffix'     => $this->l('minutes'),
+                    ],
+                ],
+                'submit' => ['title' => $this->l('Save')],
+            ],
         ];
     }
 

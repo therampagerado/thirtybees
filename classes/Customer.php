@@ -55,6 +55,8 @@ class CustomerCore extends ObjectModel
             'email'                      => ['type' => self::TYPE_STRING, 'validate' => 'isEmail', 'required' => true, 'size' => 128],
             'passwd'                     => ['type' => self::TYPE_STRING, 'validate' => 'isPasswd', 'required' => true, 'size' => 60],
             'last_passwd_gen'            => ['type' => self::TYPE_DATE, 'copy_post' => false, 'dbType' => 'timestamp', 'dbDefault' => ObjectModel::DEFAULT_CURRENT_TIMESTAMP],
+            'reset_password_token'       => ['type' => self::TYPE_STRING, 'size' => 64],
+            'reset_password_validity'    => ['type' => self::TYPE_DATE],
             'birthday'                   => ['type' => self::TYPE_DATE, 'validate' => 'isBirthDate', 'dbType' => 'date'],
             'newsletter'                 => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbDefault' => '0'],
             'ip_registration_newsletter' => ['type' => self::TYPE_STRING, 'copy_post' => false, 'size' => 45],
@@ -77,6 +79,7 @@ class CustomerCore extends ObjectModel
                 'customer_email'     => ['type' => ObjectModel::KEY, 'columns' => ['email']],
                 'customer_login'     => ['type' => ObjectModel::KEY, 'columns' => ['email', 'passwd']],
                 'id_customer_passwd' => ['type' => ObjectModel::KEY, 'columns' => ['id_customer', 'passwd']],
+                'reset_password_token' => ['type' => ObjectModel::KEY, 'columns' => ['reset_password_token']],
                 'id_gender'          => ['type' => ObjectModel::KEY, 'columns' => ['id_gender']],
                 'id_shop'            => ['type' => ObjectModel::KEY, 'columns' => ['id_shop', 'date_add']],
                 'id_shop_group'      => ['type' => ObjectModel::KEY, 'columns' => ['id_shop_group']],
@@ -165,6 +168,10 @@ class CustomerCore extends ObjectModel
     public $passwd;
     /** @var string Datetime Password */
     public $last_passwd_gen;
+    /** @var string Reset password token */
+    public $reset_password_token;
+    /** @var string Token validity */
+    public $reset_password_validity;
     /** @var bool Status */
     public $active = true;
     /** @var bool Status */
@@ -1386,5 +1393,79 @@ class CustomerCore extends ObjectModel
         // delete source customer
         $source->delete();
 
+    }
+
+    /**
+     * Removes stored reset password token for this customer
+     *
+     * @return void
+     *
+     * @throws PrestaShopDatabaseException
+     */
+    public function clearResetPasswordToken()
+    {
+        if (!$this->id) {
+            return;
+        }
+
+        Db::getInstance()->update(
+            'customer',
+            [
+                'reset_password_token' => null,
+                'reset_password_validity' => null,
+            ],
+            'id_customer = '.(int) $this->id
+        );
+        $this->reset_password_token = null;
+        $this->reset_password_validity = null;
+    }
+
+    /**
+     * Finds a customer by reset password token
+     *
+     * @param string $token
+     *
+     * @return Customer|false
+     *
+     * @throws PrestaShopDatabaseException
+     */
+    public static function getByResetPasswordToken($token)
+    {
+        if (!$token) {
+            return false;
+        }
+
+        $row = Db::readOnly()->getRow(
+            (new DbQuery())
+                ->select('*')
+                ->from('customer')
+                ->where('`reset_password_token` = \''.pSQL($token).'\'')
+        );
+
+        if (!$row) {
+            return false;
+        }
+
+        if (!empty($row['reset_password_validity']) && strtotime($row['reset_password_validity']) < time()) {
+            Db::getInstance()->update(
+                'customer',
+                [
+                    'reset_password_token' => null,
+                    'reset_password_validity' => null,
+                ],
+                'id_customer = '.(int) $row['id_customer']
+            );
+            return false;
+        }
+
+        $customer = new Customer();
+        $customer->id = (int) $row['id_customer'];
+        foreach ($row as $key => $value) {
+            if (property_exists($customer, $key)) {
+                $customer->{$key} = $value;
+            }
+        }
+
+        return $customer;
     }
 }
