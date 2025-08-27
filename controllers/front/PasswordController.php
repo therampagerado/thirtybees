@@ -137,7 +137,10 @@ class PasswordControllerCore extends FrontController
     {
         parent::initContent();
         if ($customer = $this->getCustomer()) {
-            $this->context->smarty->assign(['customer' => $customer]);
+            $this->context->smarty->assign([
+                'customer' => $customer,
+                'token'    => Tools::getValue('token'),
+            ]);
             $this->setTemplate(_PS_THEME_DIR_.'password-set.tpl');
         } else {
             $this->setTemplate(_PS_THEME_DIR_.'password.tpl');
