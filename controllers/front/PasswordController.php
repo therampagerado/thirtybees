@@ -65,10 +65,10 @@ class PasswordControllerCore extends FrontController
                     $this->errors[] = Tools::displayError('There is no account registered for this email address.');
                 } elseif (!$customer->active) {
                     $this->errors[] = Tools::displayError('You cannot regenerate the password for this account.');
-                } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('PS_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
+                } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('TB_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
                     $this->errors[] = sprintf(Tools::displayError('You can regenerate your password only every %d minute(s)'), (int) $minTime);
                 } else {
-                    $limit = (int) Configuration::get('PS_PASSWD_RESET_REQUEST_LIMIT');
+                    $limit = (int) Configuration::get('TB_PASSWD_RESET_REQUEST_LIMIT');
                     $ip = Tools::getRemoteAddr();
                     if ($limit) {
                         $oneHourAgo = date('Y-m-d H:i:s', time() - 3600);
@@ -84,7 +84,7 @@ class PasswordControllerCore extends FrontController
                         }
                     }
                     if (empty($this->errors)) {
-                        $ttlMinutes = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
+                        $ttlMinutes = (int) Configuration::get('TB_PASSWD_RESET_TOKEN_LIFETIME');
                         if (!$ttlMinutes) {
                             $ttlMinutes = 60;
                         }
@@ -117,7 +117,7 @@ class PasswordControllerCore extends FrontController
                 $this->ajaxDie(json_encode($return));
             }
         } elseif ($customer = $this->getCustomer()) {
-            if ((strtotime($customer->last_passwd_gen.'+'.(int) Configuration::get('PS_PASSWD_TIME_FRONT').' minutes') - time()) > 0) {
+            if ((strtotime($customer->last_passwd_gen.'+'.(int) Configuration::get('TB_PASSWD_TIME_FRONT').' minutes') - time()) > 0) {
                 Tools::redirect('index.php?controller=authentication&error_regen_pwd');
             } else {
                 $password = Tools::getValue('password');
@@ -215,6 +215,8 @@ class PasswordControllerCore extends FrontController
             if (!$customer || !$customer->active || !hash_equals($customer->reset_password_token, hash('sha256', $token))) {
                 throw new PrestaShopException(Tools::displayError('Your password reset link is invalid or expired. Please request a new one.'));
             }
+            // expose raw token for subsequent form submission
+            $customer->reset_password_token = $token;
             return $customer;
         }
         return false;

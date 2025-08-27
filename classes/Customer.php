@@ -536,7 +536,7 @@ class CustomerCore extends ObjectModel
         $this->id_lang = ($this->id_lang) ? $this->id_lang : Context::getContext()->language->id;
         $this->birthday = (empty($this->years) ? $this->birthday : (int) $this->years.'-'.(int) $this->months.'-'.(int) $this->days);
         $this->secure_key = md5(uniqid(rand(), true));
-        $this->last_passwd_gen = date('Y-m-d H:i:s', strtotime('-'.Configuration::get('PS_PASSWD_TIME_FRONT').'minutes'));
+        $this->last_passwd_gen = date('Y-m-d H:i:s', strtotime('-'.Configuration::get('TB_PASSWD_TIME_FRONT').'minutes'));
 
         if ($this->newsletter && !Validate::isDate($this->newsletter_date_add)) {
             $this->newsletter_date_add = date('Y-m-d H:i:s');
@@ -1004,7 +1004,7 @@ class CustomerCore extends ObjectModel
         $this->cleanGroups();
         $this->addGroups([Configuration::get('PS_CUSTOMER_GROUP')]); //associate to Customer group
         if ($this->update()) {
-            $guestTtlMinutes = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME');
+            $guestTtlMinutes = (int) Configuration::get('TB_PASSWD_RESET_TOKEN_GUEST_LIFETIME');
             if (!$guestTtlMinutes) {
                 $guestTtlMinutes = 1440;
             }
@@ -1050,7 +1050,7 @@ class CustomerCore extends ObjectModel
     public function generateResetPasswordToken($ttl = null)
     {
         if ($ttl === null) {
-            $ttlMinutes = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
+            $ttlMinutes = (int) Configuration::get('TB_PASSWD_RESET_TOKEN_LIFETIME');
             if (!$ttlMinutes) {
                 $ttlMinutes = 60;
             }

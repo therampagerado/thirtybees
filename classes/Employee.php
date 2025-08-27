@@ -377,7 +377,7 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
      */
     public function add($autoDate = true, $nullValues = true)
     {
-        $this->last_passwd_gen = date('Y-m-d H:i:s', strtotime('-'.Configuration::get('PS_PASSWD_TIME_BACK').'minutes'));
+        $this->last_passwd_gen = date('Y-m-d H:i:s', strtotime('-'.Configuration::get('TB_PASSWD_TIME_BACK').'minutes'));
         $this->saveOptin();
         $this->updateTextDirection();
 

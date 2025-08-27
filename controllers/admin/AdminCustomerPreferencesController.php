@@ -95,7 +95,7 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                         'cast'       => 'intval',
                         'type'       => 'bool',
                     ],
-                    'PS_PASSWD_TIME_FRONT'         => [
+                    'TB_PASSWD_TIME_FRONT'         => [
                         'title'      => $this->l('Password reset delay'),
                         'hint'       => $this->l('Minimum time required between two requests for a password reset.'),
                         'validation' => 'isUnsignedInt',
@@ -132,7 +132,7 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 'title' => $this->l('Password reset token'),
                 'icon'  => 'icon-key',
                 'fields' => [
-                    'PS_PASSWD_RESET_TOKEN_LIFETIME' => [
+                    'TB_PASSWD_RESET_TOKEN_LIFETIME' => [
                         'title'       => $this->l('Token lifetime'),
                         'validation'  => 'isUnsignedInt',
                         'cast'        => 'intval',
@@ -141,7 +141,7 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                         'suffix'      => $this->l('minutes'),
                         'defaultValue'=> 60,
                     ],
-                    'PS_PASSWD_RESET_TOKEN_GUEST_LIFETIME' => [
+                    'TB_PASSWD_RESET_TOKEN_GUEST_LIFETIME' => [
                         'title'       => $this->l('Guest conversion token lifetime'),
                         'validation'  => 'isUnsignedInt',
                         'cast'        => 'intval',
@@ -150,14 +150,14 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                         'suffix'      => $this->l('minutes'),
                         'defaultValue'=> 1440,
                     ],
-                    'PS_PASSWD_RESET_TOKEN_ON_LOGIN' => [
+                    'TB_PASSWD_RESET_TOKEN_ON_LOGIN' => [
                         'title'       => $this->l('Reset token on login'),
                         'validation'  => 'isBool',
                         'cast'        => 'intval',
                         'type'        => 'bool',
                         'defaultValue'=> 1,
                     ],
-                    'PS_PASSWD_RESET_REQUEST_LIMIT' => [
+                    'TB_PASSWD_RESET_REQUEST_LIMIT' => [
                         'title'       => $this->l('Max reset requests per hour'),
                         'validation'  => 'isUnsignedInt',
                         'cast'        => 'intval',

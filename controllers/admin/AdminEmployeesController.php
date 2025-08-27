@@ -143,7 +143,7 @@ class AdminEmployeesControllerCore extends AdminController
             'general' => [
                 'title'  => $this->l('Employee options'),
                 'fields' => [
-                    'PS_PASSWD_TIME_BACK'            => [
+                    'TB_PASSWD_TIME_BACK'            => [
                         'title'      => $this->l('Password regeneration'),
                         'hint'       => $this->l('Security: Minimum time to wait between two password changes.'),
                         'cast'       => 'intval',
