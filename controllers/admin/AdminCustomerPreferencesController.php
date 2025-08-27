@@ -95,15 +95,6 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                         'cast'       => 'intval',
                         'type'       => 'bool',
                     ],
-                    'PS_PASSWD_TIME_FRONT'         => [
-                        'title'      => $this->l('Password reset delay'),
-                        'hint'       => $this->l('Minimum time required between two requests for a password reset.'),
-                        'validation' => 'isUnsignedInt',
-                        'cast'       => 'intval',
-                        'size'       => 5,
-                        'type'       => 'text',
-                        'suffix'     => $this->l('minutes'),
-                    ],
                     'PS_B2B_ENABLE'                => [
                         'title'      => $this->l('Enable B2B mode'),
                         'hint'       => $this->l('Activate or deactivate B2B mode. When this option is enabled, B2B features will be made available.'),
@@ -141,9 +132,19 @@ class AdminCustomerPreferencesControllerCore extends AdminController
             'title'  => $this->l('Password reset'),
             'icon'   => 'icon-unlock',
             'fields' => [
+                'PS_PASSWD_TIME_FRONT'         => [
+                    'title'      => $this->l('Password reset delay'),
+                    'hint'       => $this->l('Minimum time required between two requests for a password reset.'),
+                    'validation' => 'isUnsignedInt',
+                    'cast'       => 'intval',
+                    'size'       => 5,
+                    'type'       => 'text',
+                    'suffix'     => $this->l('minutes'),
+                ],
                 'TB_PASSWD_RESET_TOKEN_TTL' => [
                     'title'      => $this->l('Password reset token lifetime'),
                     'hint'       => $this->l('Lifetime in hours of the password reset token.'),
+                    'desc'       => $this->l('Tokens expire after this delay and the value must be greater than 0.'),
                     'validation' => 'isUnsignedInt',
                     'cast'       => 'intval',
                     'size'       => 5,
@@ -153,6 +154,7 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 'TB_GUEST_TO_CUSTOMER_TOKEN_TTL' => [
                     'title'      => $this->l('Guest to customer token lifetime'),
                     'hint'       => $this->l('Lifetime in hours of guest to customer tokens.'),
+                    'desc'       => $this->l('Tokens expire after this delay and the value must be greater than 0.'),
                     'validation' => 'isUnsignedInt',
                     'cast'       => 'intval',
                     'size'       => 5,
@@ -187,5 +189,31 @@ class AdminCustomerPreferencesControllerCore extends AdminController
             }
         }
         Configuration::updateValue('PS_B2B_ENABLE', $value);
+    }
+
+    /**
+     * @return bool
+     */
+    public function postProcess()
+    {
+        if (Tools::isSubmit('submitOptionsconfiguration')) {
+            if (Tools::getIsset('TB_PASSWD_RESET_TOKEN_TTL')) {
+                $resetTtl = (int) Tools::getValue('TB_PASSWD_RESET_TOKEN_TTL');
+                if ($resetTtl < 1) {
+                    $this->errors[] = $this->l('Password reset token lifetime must be greater than 0.');
+                }
+            }
+            if (Tools::getIsset('TB_GUEST_TO_CUSTOMER_TOKEN_TTL')) {
+                $guestTtl = (int) Tools::getValue('TB_GUEST_TO_CUSTOMER_TOKEN_TTL');
+                if ($guestTtl < 1) {
+                    $this->errors[] = $this->l('Guest to customer token lifetime must be greater than 0.');
+                }
+            }
+            if (count($this->errors)) {
+                return false;
+            }
+        }
+
+        return parent::postProcess();
     }
 }
