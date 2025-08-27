@@ -55,7 +55,7 @@ class PasswordControllerCore extends FrontController
      */
     public function postProcess()
     {
-        if (Tools::isSubmit('email')) {
+        if (Tools::isSubmit('email') && !Tools::isSubmit('password')) {
             if (!($email = trim(Tools::getValue('email'))) || !Validate::isEmail($email)) {
                 $this->errors[] = Tools::displayError('Invalid email address.');
             } else {
