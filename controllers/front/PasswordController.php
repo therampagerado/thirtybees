@@ -68,7 +68,11 @@ class PasswordControllerCore extends FrontController
                 } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('PS_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
                     $this->errors[] = sprintf(Tools::displayError('You can regenerate your password only every %d minute(s)'), (int) $minTime);
                 } else {
-                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->secure_key.'&id_customer='.(int) $customer->id);
+                    if (!$customer->hasRecentResetPasswordToken()) {
+                        $customer->stampResetPasswordToken();
+                        $customer->update();
+                    }
+                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->secure_key.'&id_customer='.(int) $customer->id.'&reset_token='.$customer->reset_password_token);
                     $mailParams = [
                         '{email}'     => $customer->email,
                         '{lastname}'  => $customer->lastname,
@@ -124,7 +128,10 @@ class PasswordControllerCore extends FrontController
     {
         parent::initContent();
         if ($customer = $this->getCustomer()) {
-            $this->context->smarty->assign(['customer' => $customer]);
+            $this->context->smarty->assign([
+                'customer' => $customer,
+                'reset_token' => Tools::getValue('reset_token'),
+            ]);
             $this->setTemplate(_PS_THEME_DIR_.'password-set.tpl');
         } else {
             $this->setTemplate(_PS_THEME_DIR_.'password.tpl');
@@ -147,6 +154,8 @@ class PasswordControllerCore extends FrontController
                 'customer' => $customer,
                 'password' => $password
             ]);
+            $customer->removeResetPasswordToken();
+            $customer->update();
             $this->context->smarty->assign(['confirmation' => 1]);
         } else {
             $this->errors[] = Tools::displayError('An error occurred with your account, which prevents us from sending you a new password. Please report this issue using the contact form.');
@@ -182,7 +191,8 @@ class PasswordControllerCore extends FrontController
     {
         $token = Tools::getValue('token');
         $idCustomer = Tools::getIntValue('id_customer');
-        if ($token && $idCustomer) {
+        $resetToken = Tools::getValue('reset_token');
+        if ($token && $idCustomer && $resetToken) {
             $email = Db::readOnly()->getValue(
                 (new DbQuery())
                     ->select('c.`email`')
@@ -199,12 +209,15 @@ class PasswordControllerCore extends FrontController
                 if (!$customer->active) {
                     throw new PrestaShopException(Tools::displayError('You cannot regenerate the password for this account.'));
                 }
+                if ($customer->getValidResetPasswordToken() !== $resetToken) {
+                    throw new PrestaShopException(Tools::displayError('The password change request expired. You should ask for a new one.'));
+                }
                 return $customer;
             } else {
                 throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
             }
         }
-        if ($token || $idCustomer) {
+        if ($token || $idCustomer || $resetToken) {
             throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
         }
         return false;
