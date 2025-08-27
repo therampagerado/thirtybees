@@ -65,6 +65,8 @@ class CustomerCore extends ObjectModel
             'show_public_prices'         => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'max_payment_days'           => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'copy_post' => false, 'dbDefault' => '60'],
             'secure_key'                 => ['type' => self::TYPE_STRING, 'validate' => 'isMd5', 'copy_post' => false, 'size' => 32, 'dbDefault' => '-1'],
+            'reset_password_token'       => ['type' => self::TYPE_STRING, 'size' => 64, 'copy_post' => false],
+            'reset_password_validity'    => ['type' => self::TYPE_DATE, 'dbType' => 'datetime', 'copy_post' => false, 'dbNullable' => true],
             'note'                       => ['type' => self::TYPE_HTML, 'validate' => 'isCleanHtml', 'copy_post' => false, 'size' => ObjectModel::SIZE_TEXT],
             'active'                     => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'is_guest'                   => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
@@ -80,6 +82,7 @@ class CustomerCore extends ObjectModel
                 'id_gender'          => ['type' => ObjectModel::KEY, 'columns' => ['id_gender']],
                 'id_shop'            => ['type' => ObjectModel::KEY, 'columns' => ['id_shop', 'date_add']],
                 'id_shop_group'      => ['type' => ObjectModel::KEY, 'columns' => ['id_shop_group']],
+                'reset_password_token' => ['type' => ObjectModel::KEY, 'columns' => ['reset_password_token']],
             ],
         ],
     ];
@@ -175,6 +178,12 @@ class CustomerCore extends ObjectModel
     public $date_add;
     /** @var string Object last modification date */
     public $date_upd;
+
+    /** @var string Password reset token */
+    public $reset_password_token;
+
+    /** @var string Password reset token validity */
+    public $reset_password_validity;
 
     /**
      * @var int
@@ -1386,5 +1395,26 @@ class CustomerCore extends ObjectModel
         // delete source customer
         $source->delete();
 
+    }
+
+    /**
+     * Assigns new password reset token and validity
+     *
+     * @param string $token Plain token
+     * @param int $lifetime Lifetime in seconds
+     */
+    public function setResetPasswordToken($token, $lifetime)
+    {
+        $this->reset_password_token = hash('sha256', $token);
+        $this->reset_password_validity = date('Y-m-d H:i:s', time() + (int)$lifetime);
+    }
+
+    /**
+     * Clears password reset token
+     */
+    public function clearResetPasswordToken()
+    {
+        $this->reset_password_token = null;
+        $this->reset_password_validity = null;
     }
 }

@@ -129,6 +129,39 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                 'submit' => ['title' => $this->l('Save')],
             ],
         ];
+
+        if (!Configuration::hasKey('TB_PASSWD_RESET_TOKEN_TTL')) {
+            Configuration::updateValue('TB_PASSWD_RESET_TOKEN_TTL', 1);
+        }
+        if (!Configuration::hasKey('TB_GUEST_TO_CUSTOMER_TOKEN_TTL')) {
+            Configuration::updateValue('TB_GUEST_TO_CUSTOMER_TOKEN_TTL', 48);
+        }
+
+        $this->fields_options['password_reset'] = [
+            'title'  => $this->l('Password reset'),
+            'icon'   => 'icon-unlock',
+            'fields' => [
+                'TB_PASSWD_RESET_TOKEN_TTL' => [
+                    'title'      => $this->l('Password reset token lifetime'),
+                    'hint'       => $this->l('Lifetime in hours of the password reset token.'),
+                    'validation' => 'isUnsignedInt',
+                    'cast'       => 'intval',
+                    'size'       => 5,
+                    'type'       => 'text',
+                    'suffix'     => $this->l('hours'),
+                ],
+                'TB_GUEST_TO_CUSTOMER_TOKEN_TTL' => [
+                    'title'      => $this->l('Guest to customer token lifetime'),
+                    'hint'       => $this->l('Lifetime in hours of guest to customer tokens.'),
+                    'validation' => 'isUnsignedInt',
+                    'cast'       => 'intval',
+                    'size'       => 5,
+                    'type'       => 'text',
+                    'suffix'     => $this->l('hours'),
+                ],
+            ],
+            'submit' => ['title' => $this->l('Save')],
+        ];
     }
 
     /**
