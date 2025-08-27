@@ -59,31 +59,27 @@ class PasswordControllerCore extends FrontController
             if (!($email = trim(Tools::getValue('email'))) || !Validate::isEmail($email)) {
                 $this->errors[] = Tools::displayError('Invalid email address.');
             } else {
+                Customer::cleanExpiredResetPasswordTokens();
                 $customer = new Customer();
-                $customer->getByemail($email);
-                if (!Validate::isLoadedObject($customer)) {
-                    $this->errors[] = Tools::displayError('There is no account registered for this email address.');
-                } elseif (!$customer->active) {
-                    $this->errors[] = Tools::displayError('You cannot regenerate the password for this account.');
-                } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('PS_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
-                    $this->errors[] = sprintf(Tools::displayError('You can regenerate your password only every %d minute(s)'), (int) $minTime);
-                } else {
-                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->secure_key.'&id_customer='.(int) $customer->id);
-                    $mailParams = [
-                        '{email}'     => $customer->email,
-                        '{lastname}'  => $customer->lastname,
-                        '{firstname}' => $customer->firstname,
-                        '{url}'       => $url,
-                    ];
-                    if (Mail::Send($this->context->language->id, 'password_query', Mail::l('Password query confirmation'), $mailParams, $customer->email, $customer->firstname.' '.$customer->lastname)) {
-                        $this->context->smarty->assign([
-                            'confirmation' => 2,
-                            'customer_email' => $customer->email
-                        ]);
-                    } else {
-                        $this->errors[] = Tools::displayError('An error occurred while sending the email.');
+                $customer->getByEmail($email);
+                if (Validate::isLoadedObject($customer) && $customer->active) {
+                    $minTime = (int) Configuration::get('PS_PASSWD_TIME_FRONT');
+                    if ((strtotime($customer->last_passwd_gen.'+'.$minTime.' minutes') - time()) <= 0) {
+                        $token = $customer->generateResetPasswordToken();
+                        $url = $this->context->link->getPageLink('password', true, null, 'token='.$token);
+                        $mailParams = [
+                            '{email}'     => $customer->email,
+                            '{lastname}'  => $customer->lastname,
+                            '{firstname}' => $customer->firstname,
+                            '{url}'       => $url,
+                            '{token_validity}' => (int) (Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME') / 60),
+                        ];
+                        if (Mail::Send($this->context->language->id, 'password_query', Mail::l('Password query confirmation'), $mailParams, $customer->email, $customer->firstname.' '.$customer->lastname)) {
+                            PrestaShopLogger::addLog(sprintf('Password reset token issued for %s from %s [%s]', $customer->email, Tools::getRemoteAddr(), isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : ''), 1, null, 'Customer', (int) $customer->id);
+                        }
                     }
                 }
+                $this->context->smarty->assign(['confirmation' => 2]);
             }
             if ($this->ajax) {
                 $return = [
@@ -142,6 +138,7 @@ class PasswordControllerCore extends FrontController
     {
         $customer->passwd = Tools::hash($password);
         $customer->last_passwd_gen = date('Y-m-d H:i:s', time());
+        $customer->clearResetPasswordToken();
         if ($customer->update()) {
             Hook::triggerEvent('actionPasswordRenew', [
                 'customer' => $customer,
@@ -181,18 +178,16 @@ class PasswordControllerCore extends FrontController
     protected static function resolveCustomer()
     {
         $token = Tools::getValue('token');
-        $idCustomer = Tools::getIntValue('id_customer');
-        if ($token && $idCustomer) {
-            $email = Db::readOnly()->getValue(
+        if ($token) {
+            $row = Db::readOnly()->getRow(
                 (new DbQuery())
-                    ->select('c.`email`')
+                    ->select('c.`email`, c.`reset_password_validity`')
                     ->from('customer', 'c')
-                    ->where('c.`secure_key` = \''.pSQL($token).'\'')
-                    ->where('c.`id_customer` = '.(int) $idCustomer)
+                    ->where('c.`reset_password_token` = \''.pSQL($token).'\'')
             );
-            if ($email) {
+            if ($row && $row['reset_password_validity'] && strtotime($row['reset_password_validity']) > time()) {
                 $customer = new Customer();
-                $customer->getByemail($email);
+                $customer->getByEmail($row['email']);
                 if (!Validate::isLoadedObject($customer)) {
                     throw new PrestaShopException(Tools::displayError('Customer account not found'));
                 }
@@ -200,11 +195,10 @@ class PasswordControllerCore extends FrontController
                     throw new PrestaShopException(Tools::displayError('You cannot regenerate the password for this account.'));
                 }
                 return $customer;
-            } else {
-                throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
             }
-        }
-        if ($token || $idCustomer) {
+            if ($row) {
+                Db::getInstance()->update('customer', ['reset_password_token' => null, 'reset_password_validity' => null], 'reset_password_token = \''.pSQL($token).'\'');
+            }
             throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
         }
         return false;

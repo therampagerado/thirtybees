@@ -55,6 +55,8 @@ class CustomerCore extends ObjectModel
             'email'                      => ['type' => self::TYPE_STRING, 'validate' => 'isEmail', 'required' => true, 'size' => 128],
             'passwd'                     => ['type' => self::TYPE_STRING, 'validate' => 'isPasswd', 'required' => true, 'size' => 60],
             'last_passwd_gen'            => ['type' => self::TYPE_DATE, 'copy_post' => false, 'dbType' => 'timestamp', 'dbDefault' => ObjectModel::DEFAULT_CURRENT_TIMESTAMP],
+            'reset_password_token'       => ['type' => self::TYPE_STRING, 'size' => 64, 'copy_post' => false, 'dbNullable' => true],
+            'reset_password_validity'    => ['type' => self::TYPE_DATE, 'copy_post' => false, 'dbNullable' => true],
             'birthday'                   => ['type' => self::TYPE_DATE, 'validate' => 'isBirthDate', 'dbType' => 'date'],
             'newsletter'                 => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'dbDefault' => '0'],
             'ip_registration_newsletter' => ['type' => self::TYPE_STRING, 'copy_post' => false, 'size' => 45],
@@ -75,11 +77,12 @@ class CustomerCore extends ObjectModel
         'keys' => [
             'customer' => [
                 'customer_email'     => ['type' => ObjectModel::KEY, 'columns' => ['email']],
-                'customer_login'     => ['type' => ObjectModel::KEY, 'columns' => ['email', 'passwd']],
-                'id_customer_passwd' => ['type' => ObjectModel::KEY, 'columns' => ['id_customer', 'passwd']],
-                'id_gender'          => ['type' => ObjectModel::KEY, 'columns' => ['id_gender']],
-                'id_shop'            => ['type' => ObjectModel::KEY, 'columns' => ['id_shop', 'date_add']],
+            'customer_login'     => ['type' => ObjectModel::KEY, 'columns' => ['email', 'passwd']],
+            'id_customer_passwd' => ['type' => ObjectModel::KEY, 'columns' => ['id_customer', 'passwd']],
+            'id_gender'          => ['type' => ObjectModel::KEY, 'columns' => ['id_gender']],
+            'id_shop'            => ['type' => ObjectModel::KEY, 'columns' => ['id_shop', 'date_add']],
                 'id_shop_group'      => ['type' => ObjectModel::KEY, 'columns' => ['id_shop_group']],
+                'reset_password_token' => ['type' => ObjectModel::UNIQUE_KEY, 'columns' => ['reset_password_token']],
             ],
         ],
     ];
@@ -165,6 +168,10 @@ class CustomerCore extends ObjectModel
     public $passwd;
     /** @var string Datetime Password */
     public $last_passwd_gen;
+    /** @var string|null Reset password token */
+    public $reset_password_token;
+    /** @var string|null Reset password validity */
+    public $reset_password_validity;
     /** @var bool Status */
     public $active = true;
     /** @var bool Status */
@@ -1344,6 +1351,49 @@ class CustomerCore extends ObjectModel
         $sqlFilter .= Shop::addSqlRestriction(Shop::SHARE_CUSTOMER, 'main');
 
         return parent::getWebserviceObjectList($sqlJoin, $sqlFilter, $sqlSort, $sqlLimit);
+    }
+
+    /**
+     * Generate and store new reset password token
+     *
+     * @return string
+     *
+     * @throws Exception
+     * @throws PrestaShopException
+     */
+    public function generateResetPasswordToken()
+    {
+        $token = bin2hex(random_bytes(32));
+        $this->reset_password_token = $token;
+        $ttl = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME') * 60;
+        $this->reset_password_validity = date('Y-m-d H:i:s', time() + $ttl);
+        $this->update();
+
+        return $token;
+    }
+
+    /**
+     * Clear reset password token and validity
+     *
+     * @return void
+     *
+     * @throws PrestaShopException
+     */
+    public function clearResetPasswordToken()
+    {
+        $this->reset_password_token = null;
+        $this->reset_password_validity = null;
+        $this->update();
+    }
+
+    /**
+     * Null expired reset password tokens
+     *
+     * @return void
+     */
+    public static function cleanExpiredResetPasswordTokens()
+    {
+        Db::getInstance()->execute('UPDATE `'._DB_PREFIX_.'customer` SET `reset_password_token` = NULL, `reset_password_validity` = NULL WHERE `reset_password_validity` IS NOT NULL AND `reset_password_validity` < NOW()');
     }
 
     /**
