@@ -65,6 +65,8 @@ class CustomerCore extends ObjectModel
             'show_public_prices'         => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'max_payment_days'           => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'copy_post' => false, 'dbDefault' => '60'],
             'secure_key'                 => ['type' => self::TYPE_STRING, 'validate' => 'isMd5', 'copy_post' => false, 'size' => 32, 'dbDefault' => '-1'],
+            'reset_password_token'      => ['type' => self::TYPE_STRING, 'validate' => 'isAnything', 'size' => 40],
+            'reset_password_validity'   => ['type' => self::TYPE_DATE, 'validate' => 'isDateFormat', 'dbType' => 'datetime'],
             'note'                       => ['type' => self::TYPE_HTML, 'validate' => 'isCleanHtml', 'copy_post' => false, 'size' => ObjectModel::SIZE_TEXT],
             'active'                     => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'is_guest'                   => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
@@ -121,6 +123,10 @@ class CustomerCore extends ObjectModel
     public $id_shop_group;
     /** @var string Secure key */
     public $secure_key;
+    /** @var string Password reset token */
+    public $reset_password_token;
+    /** @var string|null Password reset token validity */
+    public $reset_password_validity;
     /** @var string protected note */
     public $note;
     /** @var int Gender ID */
@@ -998,11 +1004,17 @@ class CustomerCore extends ObjectModel
         $this->cleanGroups();
         $this->addGroups([Configuration::get('PS_CUSTOMER_GROUP')]); //associate to Customer group
         if ($this->update()) {
+            $hours = (int) Configuration::get('PS_PASSWD_RESET_GUEST_TOKEN_LIFETIME');
+            if (!$hours) {
+                $hours = 24;
+            }
+            $this->generateResetPasswordToken($hours);
+            $url = Context::getContext()->link->getPageLink('password', true, null, 'token='.$this->reset_password_token.'&id_customer='.(int) $this->id);
             $vars = [
                 '{firstname}' => $this->firstname,
                 '{lastname}'  => $this->lastname,
                 '{email}'     => $this->email,
-                '{passwd}'    => '*******',
+                '{url}'       => $url,
             ];
 
             Mail::Send(
@@ -1063,6 +1075,51 @@ class CustomerCore extends ObjectModel
         }
 
         return parent::update(true);
+    }
+
+    /**
+     * Generate a new reset password token for given lifetime.
+     *
+     * @param int $hours token lifetime in hours
+     * @return bool
+     */
+    public function generateResetPasswordToken($hours)
+    {
+        $this->reset_password_token = Tools::passwdGen(40);
+        $this->reset_password_validity = date('Y-m-d H:i:s', time() + (int)$hours * 3600);
+
+        return $this->update();
+    }
+
+    /**
+     * Remove existing reset password token.
+     *
+     * @return bool
+     */
+    public function clearResetPasswordToken()
+    {
+        $this->reset_password_token = null;
+        $this->reset_password_validity = null;
+
+        return $this->update();
+    }
+
+    /**
+     * Check if supplied token matches and is still valid.
+     *
+     * @param string $token
+     * @return bool
+     */
+    public function isResetPasswordTokenValid($token)
+    {
+        if ($this->reset_password_token !== $token) {
+            return false;
+        }
+        if (empty($this->reset_password_validity)) {
+            return false;
+        }
+
+        return strtotime($this->reset_password_validity) >= time();
     }
 
     /**

@@ -68,7 +68,14 @@ class PasswordControllerCore extends FrontController
                 } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('PS_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
                     $this->errors[] = sprintf(Tools::displayError('You can regenerate your password only every %d minute(s)'), (int) $minTime);
                 } else {
-                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->secure_key.'&id_customer='.(int) $customer->id);
+                    $hours = (int) Configuration::get('PS_PASSWD_RESET_TOKEN_LIFETIME');
+                    if (!$hours) {
+                        $hours = 1;
+                    }
+                    if (!Configuration::hasKey('PS_PASSWD_RESET_ON_REQUEST') || Configuration::get('PS_PASSWD_RESET_ON_REQUEST') || !$customer->isResetPasswordTokenValid($customer->reset_password_token)) {
+                        $customer->generateResetPasswordToken($hours);
+                    }
+                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->reset_password_token.'&id_customer='.(int) $customer->id);
                     $mailParams = [
                         '{email}'     => $customer->email,
                         '{lastname}'  => $customer->lastname,
@@ -143,6 +150,9 @@ class PasswordControllerCore extends FrontController
         $customer->passwd = Tools::hash($password);
         $customer->last_passwd_gen = date('Y-m-d H:i:s', time());
         if ($customer->update()) {
+            if (!Configuration::hasKey('PS_PASSWD_RESET_ON_RESET') || Configuration::get('PS_PASSWD_RESET_ON_RESET')) {
+                $customer->clearResetPasswordToken();
+            }
             Hook::triggerEvent('actionPasswordRenew', [
                 'customer' => $customer,
                 'password' => $password
@@ -183,26 +193,14 @@ class PasswordControllerCore extends FrontController
         $token = Tools::getValue('token');
         $idCustomer = Tools::getIntValue('id_customer');
         if ($token && $idCustomer) {
-            $email = Db::readOnly()->getValue(
-                (new DbQuery())
-                    ->select('c.`email`')
-                    ->from('customer', 'c')
-                    ->where('c.`secure_key` = \''.pSQL($token).'\'')
-                    ->where('c.`id_customer` = '.(int) $idCustomer)
-            );
-            if ($email) {
-                $customer = new Customer();
-                $customer->getByemail($email);
-                if (!Validate::isLoadedObject($customer)) {
-                    throw new PrestaShopException(Tools::displayError('Customer account not found'));
-                }
-                if (!$customer->active) {
-                    throw new PrestaShopException(Tools::displayError('You cannot regenerate the password for this account.'));
-                }
-                return $customer;
-            } else {
+            $customer = new Customer($idCustomer);
+            if (!Validate::isLoadedObject($customer)) {
+                throw new PrestaShopException(Tools::displayError('Customer account not found'));
+            }
+            if (!$customer->active || !$customer->isResetPasswordTokenValid($token)) {
                 throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
             }
+            return $customer;
         }
         if ($token || $idCustomer) {
             throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));

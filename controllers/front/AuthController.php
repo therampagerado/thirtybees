@@ -376,6 +376,10 @@ class AuthControllerCore extends FrontController
 
                 Hook::triggerEvent('actionAuthentication', ['customer' => $this->context->customer]);
 
+                if (!Configuration::hasKey('PS_PASSWD_RESET_ON_LOGIN') || Configuration::get('PS_PASSWD_RESET_ON_LOGIN')) {
+                    $customer->clearResetPasswordToken();
+                }
+
                 // Login information have changed, so we check if the cart rules still apply
                 CartRule::autoRemoveFromCart($this->context);
                 CartRule::autoAddToCart($this->context);
