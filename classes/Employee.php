@@ -73,6 +73,16 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
     public $last_passwd_gen;
 
     /**
+     * @var string Reset password token
+     */
+    public $reset_password_token;
+
+    /**
+     * @var string Reset password validity
+     */
+    public $reset_password_validity;
+
+    /**
      * @var string $stats_date_from
      */
     public $stats_date_from;
@@ -186,6 +196,8 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
             'email'                    => ['type' => self::TYPE_STRING, 'validate' => 'isEmail', 'required' => true, 'size' => 128],
             'passwd'                   => ['type' => self::TYPE_STRING, 'validate' => 'isPasswdAdmin', 'required' => true, 'size' => 60 ],
             'last_passwd_gen'          => ['type' => self::TYPE_DATE, 'dbType' => 'timestamp', 'dbDefault' => ObjectModel::DEFAULT_CURRENT_TIMESTAMP],
+            'reset_password_token'     => ['type' => self::TYPE_STRING, 'validate' => 'isSha1', 'size' => 40, 'copy_post' => false],
+            'reset_password_validity'  => ['type' => self::TYPE_DATE, 'validate' => 'isDateOrNull', 'copy_post' => false],
             'stats_date_from'          => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'dbType' => 'date'],
             'stats_date_to'            => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'dbType' => 'date'],
             'stats_compare_from'       => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'dbType' => 'date'],
@@ -339,6 +351,58 @@ class EmployeeCore extends ObjectModel implements InitializationCallback
             );
         }
         return false;
+    }
+
+    /**
+     * Fill Reset password unique token with random sha1 and its validity date.
+     */
+    public function stampResetPasswordToken()
+    {
+        $salt = $this->id . '+' . uniqid((string) mt_rand(0, mt_getrandmax()), true);
+        $this->reset_password_token = sha1(time() . $salt);
+        $validity = (int) Configuration::get('TB_PASSWD_RESET_VALIDITY') ?: TB_PASSWD_RESET_VALIDITY;
+        $this->reset_password_validity = date('Y-m-d H:i:s', strtotime('+' . $validity . ' minutes'));
+    }
+
+    /**
+     * Test if a reset password token is present and still valid.
+     */
+    public function hasRecentResetPasswordToken()
+    {
+        if (!$this->reset_password_token) {
+            return false;
+        }
+
+        if (!$this->reset_password_validity || strtotime($this->reset_password_validity) < time()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns the valid reset password token if it is still valid.
+     */
+    public function getValidResetPasswordToken()
+    {
+        if (!$this->reset_password_token) {
+            return false;
+        }
+
+        if (!$this->reset_password_validity || strtotime($this->reset_password_validity) < time()) {
+            return false;
+        }
+
+        return $this->reset_password_token;
+    }
+
+    /**
+     * Delete reset password token data.
+     */
+    public function removeResetPasswordToken()
+    {
+        $this->reset_password_token = null;
+        $this->reset_password_validity = null;
     }
 
     /**

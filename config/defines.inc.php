@@ -58,6 +58,10 @@ if (!defined('_PS_MODE_DEMO_')) {
     define('_PS_MODE_DEMO_', false);
 }
 
+if (!defined('TB_PASSWD_RESET_VALIDITY')) {
+    define('TB_PASSWD_RESET_VALIDITY', 1440);
+}
+
 if (!defined('PHP_VERSION_ID')) {
     $version = explode('.', PHP_VERSION);
     define('PHP_VERSION_ID', ($version[0] * 10000 + $version[1] * 100 + $version[2]));
