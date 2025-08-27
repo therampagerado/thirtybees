@@ -65,8 +65,6 @@ class CustomerCore extends ObjectModel
             'show_public_prices'         => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'max_payment_days'           => ['type' => self::TYPE_INT, 'validate' => 'isUnsignedInt', 'copy_post' => false, 'dbDefault' => '60'],
             'secure_key'                 => ['type' => self::TYPE_STRING, 'validate' => 'isMd5', 'copy_post' => false, 'size' => 32, 'dbDefault' => '-1'],
-            'reset_password_token'       => ['type' => self::TYPE_STRING, 'size' => 64, 'copy_post' => false],
-            'reset_password_validity'    => ['type' => self::TYPE_DATE, 'dbType' => 'datetime', 'copy_post' => false, 'dbNullable' => true],
             'note'                       => ['type' => self::TYPE_HTML, 'validate' => 'isCleanHtml', 'copy_post' => false, 'size' => ObjectModel::SIZE_TEXT],
             'active'                     => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'is_guest'                   => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
@@ -82,7 +80,6 @@ class CustomerCore extends ObjectModel
                 'id_gender'          => ['type' => ObjectModel::KEY, 'columns' => ['id_gender']],
                 'id_shop'            => ['type' => ObjectModel::KEY, 'columns' => ['id_shop', 'date_add']],
                 'id_shop_group'      => ['type' => ObjectModel::KEY, 'columns' => ['id_shop_group']],
-                'reset_password_token' => ['type' => ObjectModel::KEY, 'columns' => ['reset_password_token']],
             ],
         ],
     ];
@@ -178,12 +175,6 @@ class CustomerCore extends ObjectModel
     public $date_add;
     /** @var string Object last modification date */
     public $date_upd;
-
-    /** @var string Password reset token */
-    public $reset_password_token;
-
-    /** @var string Password reset token validity */
-    public $reset_password_validity;
 
     /**
      * @var int
@@ -982,51 +973,35 @@ class CustomerCore extends ObjectModel
 
     /**
      * @param int $idLang
+     * @param string|null $password
      *
      * @return bool
      *
      * @throws PrestaShopDatabaseException
      * @throws PrestaShopException
      */
-    public function transformToCustomer($idLang)
+    public function transformToCustomer($idLang, $password = null)
     {
         if (!$this->isGuest()) {
             return false;
         }
-
-        $this->is_guest = 0;
-        $this->passwd = Tools::hash(Tools::passwdGen(8, 'RANDOM'));
-
-        $tokenLifetime = (int) Configuration::get('TB_GUEST_TO_CUSTOMER_TOKEN_TTL');
-        if ($tokenLifetime <= 0) {
-            $tokenLifetime = 1;
+        if (empty($password)) {
+            $password = Tools::passwdGen(8, 'RANDOM');
+        }
+        if (!Validate::isPasswd($password)) {
+            return false;
         }
 
-        $token = bin2hex(Tools::getBytes(32));
-        $this->setResetPasswordToken($token, $tokenLifetime * 3600);
-
+        $this->is_guest = 0;
+        $this->passwd = Tools::hash($password);
         $this->cleanGroups();
         $this->addGroups([Configuration::get('PS_CUSTOMER_GROUP')]); // add default customer group
-
         if ($this->update()) {
-            $ip = Tools::getRemoteAddr();
-            $ua = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'unknown';
-            Logger::addLog(
-                'Password reset token issued for '.$this->email.' from '.$ip.' ['.$ua.']',
-                1,
-                null,
-                'Customer',
-                (int) $this->id,
-                true
-            );
-
-            $url = Context::getContext()->link->getPageLink('password', true, null, 'token='.$token);
             $vars = [
-                '{firstname}'      => $this->firstname,
-                '{lastname}'       => $this->lastname,
-                '{email}'          => $this->email,
-                '{url}'            => $url,
-                '{token_lifetime}' => $tokenLifetime,
+                '{firstname}' => $this->firstname,
+                '{lastname}'  => $this->lastname,
+                '{email}'     => $this->email,
+                '{passwd}'    => '*******',
             ];
 
             Mail::Send(
@@ -1411,26 +1386,5 @@ class CustomerCore extends ObjectModel
         // delete source customer
         $source->delete();
 
-    }
-
-    /**
-     * Assigns new password reset token and validity
-     *
-     * @param string $token Plain token
-     * @param int $lifetime Lifetime in seconds
-     */
-    public function setResetPasswordToken($token, $lifetime)
-    {
-        $this->reset_password_token = hash('sha256', $token);
-        $this->reset_password_validity = date('Y-m-d H:i:s', time() + (int)$lifetime);
-    }
-
-    /**
-     * Clears password reset token
-     */
-    public function clearResetPasswordToken()
-    {
-        $this->reset_password_token = null;
-        $this->reset_password_validity = null;
     }
 }
