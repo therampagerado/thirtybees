@@ -69,6 +69,8 @@ class CustomerCore extends ObjectModel
             'active'                     => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbDefault' => '0'],
             'is_guest'                   => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
             'deleted'                    => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
+            'reset_password_token'       => ['type' => self::TYPE_STRING, 'validate' => 'isSha1', 'size' => 40, 'copy_post' => false],
+            'reset_password_validity'    => ['type' => self::TYPE_DATE, 'validate' => 'isDateOrNull', 'copy_post' => false],
             'date_add'                   => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'copy_post' => false, 'dbNullable' => false],
             'date_upd'                   => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'copy_post' => false, 'dbNullable' => false],
         ],
@@ -205,6 +207,12 @@ class CustomerCore extends ObjectModel
      * @var array
      */
     public $groupBox;
+
+    /** @var string|null Unique token for password reset feature */
+    public $reset_password_token;
+
+    /** @var string|null Token validity date for password reset feature */
+    public $reset_password_validity;
 
     /**
      * @var array Webservice parameters
@@ -1387,5 +1395,61 @@ class CustomerCore extends ObjectModel
         // delete source customer
         $source->delete();
 
+    }
+
+    /**
+     * Fill reset password token and its validity
+     */
+    public function stampResetPasswordToken()
+    {
+        $salt = $this->id . '-' . $this->secure_key;
+        $this->reset_password_token = sha1(time() . $salt);
+        $validity = (int) Configuration::get('TB_PASSWD_RESET_TOKEN_LIFETIME') ?: TB_PASSWD_RESET_TOKEN_LIFETIME;
+        $this->reset_password_validity = date('Y-m-d H:i:s', strtotime('+' . $validity . ' minutes'));
+    }
+
+    /**
+     * Check whether reset password token exists and is still valid
+     *
+     * @return bool
+     */
+    public function hasRecentResetPasswordToken()
+    {
+        if (!$this->reset_password_token) {
+            return false;
+        }
+
+        if (!$this->reset_password_validity || strtotime($this->reset_password_validity) < time()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Returns valid reset password token or false if expired
+     *
+     * @return false|string
+     */
+    public function getValidResetPasswordToken()
+    {
+        if (!$this->reset_password_token) {
+            return false;
+        }
+
+        if (!$this->reset_password_validity || strtotime($this->reset_password_validity) < time()) {
+            return false;
+        }
+
+        return $this->reset_password_token;
+    }
+
+    /**
+     * Remove reset password token
+     */
+    public function removeResetPasswordToken()
+    {
+        $this->reset_password_token = null;
+        $this->reset_password_validity = null;
     }
 }
