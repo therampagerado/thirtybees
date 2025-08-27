@@ -104,6 +104,15 @@ class AdminCustomerPreferencesControllerCore extends AdminController
                         'type'       => 'text',
                         'suffix'     => $this->l('minutes'),
                     ],
+                    'TB_PASSWD_RESET_TOKEN_VALIDITY' => [
+                        'title'      => $this->l('Password reset link lifespan'),
+                        'hint'       => $this->l('How long the password reset link remains valid.'),
+                        'validation' => 'isUnsignedInt',
+                        'cast'       => 'intval',
+                        'size'       => 5,
+                        'type'       => 'text',
+                        'suffix'     => $this->l('minutes'),
+                    ],
                     'PS_B2B_ENABLE'                => [
                         'title'      => $this->l('Enable B2B mode'),
                         'hint'       => $this->l('Activate or deactivate B2B mode. When this option is enabled, B2B features will be made available.'),

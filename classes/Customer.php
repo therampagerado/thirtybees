@@ -71,6 +71,8 @@ class CustomerCore extends ObjectModel
             'deleted'                    => ['type' => self::TYPE_BOOL, 'validate' => 'isBool', 'copy_post' => false, 'dbType' => 'tinyint(1)', 'dbDefault' => '0'],
             'date_add'                   => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'copy_post' => false, 'dbNullable' => false],
             'date_upd'                   => ['type' => self::TYPE_DATE, 'validate' => 'isDate', 'copy_post' => false, 'dbNullable' => false],
+            'reset_password_token'       => ['type' => self::TYPE_STRING, 'validate' => 'isSha1', 'size' => 40, 'copy_post' => false],
+            'reset_password_validity'    => ['type' => self::TYPE_DATE, 'validate' => 'isDateOrNull', 'copy_post' => false],
         ],
         'keys' => [
             'customer' => [
@@ -205,6 +207,12 @@ class CustomerCore extends ObjectModel
      * @var array
      */
     public $groupBox;
+
+    /** @var string|null Unique token for forgot password feature */
+    public $reset_password_token;
+
+    /** @var string|null token validity date for forgot password feature */
+    public $reset_password_validity;
 
     /**
      * @var array Webservice parameters
@@ -1387,5 +1395,62 @@ class CustomerCore extends ObjectModel
         // delete source customer
         $source->delete();
 
+    }
+
+    /**
+     * Fill reset password unique token with random sha1 and its validity date.
+     *
+     * @return void
+     */
+    public function stampResetPasswordToken()
+    {
+        $salt = $this->id . '-' . $this->secure_key;
+        $this->reset_password_token = sha1(time() . $salt);
+        $validity = (int) Configuration::get('TB_PASSWD_RESET_TOKEN_VALIDITY');
+        $validity = $validity ?: TB_PASSWD_RESET_TOKEN_VALIDITY;
+        $this->reset_password_validity = date('Y-m-d H:i:s', strtotime('+' . $validity . ' minutes'));
+    }
+
+    /**
+     * Test if a reset password token is present and still valid.
+     *
+     * @return bool
+     */
+    public function hasRecentResetPasswordToken()
+    {
+        if (!$this->reset_password_token) {
+            return false;
+        }
+        if (!$this->reset_password_validity || strtotime($this->reset_password_validity) < time()) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns the valid reset password token if its validity date is in the future.
+     *
+     * @return bool|string
+     */
+    public function getValidResetPasswordToken()
+    {
+        if (!$this->reset_password_token) {
+            return false;
+        }
+        if (!$this->reset_password_validity || strtotime($this->reset_password_validity) < time()) {
+            return false;
+        }
+        return $this->reset_password_token;
+    }
+
+    /**
+     * Delete reset password token data.
+     *
+     * @return void
+     */
+    public function removeResetPasswordToken()
+    {
+        $this->reset_password_token = null;
+        $this->reset_password_validity = null;
     }
 }

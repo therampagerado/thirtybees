@@ -718,6 +718,8 @@ CREATE TABLE `PREFIX_customer` (
   `deleted` tinyint(1) NOT NULL DEFAULT '0',
   `date_add` datetime NOT NULL,
   `date_upd` datetime NOT NULL,
+  `reset_password_token` varchar(40) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `reset_password_validity` datetime DEFAULT NULL,
   PRIMARY KEY (`id_customer`),
   KEY `customer_email` (`email`),
   KEY `customer_login` (`email`,`passwd`),
