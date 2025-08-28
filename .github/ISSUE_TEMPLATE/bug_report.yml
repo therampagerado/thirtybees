@@ -1,0 +1,275 @@
+name: "🐞 Bug report"
+description: "Report a reproducible issue in the thirty bees core or official modules"
+title: "[Bug] <short summary>"
+labels:
+  - bug
+  - needs triage
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug! Please fill out all required fields.
+        **Do not include any secrets or personal data.** For security issues, **do not open an issue** — see the Security section below.
+
+  # --- Pre-flight checks ------------------------------------------------------
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-flight checks
+      description: Please confirm you’ve done the basics to help us triage faster.
+      options:
+        - label: I searched existing issues and discussions; this isn’t a duplicate.
+          required: true
+        - label: I can reproduce this on the latest stable or edge branch of thirty bees.
+          required: true
+        - label: I cleared cache (Smarty & application) and reloaded without the browser cache.
+          required: true
+        - label: I tested with non-core/third-party modules disabled OR I’ve provided a minimal reproduction.
+          required: true
+        - label: I enabled debug mode and captured errors/notices if any appeared.
+          required: false
+
+  # --- Severity / frequency / area -------------------------------------------
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How badly does this impact users?
+      options:
+        - Blocker (checkout/payment/data loss)
+        - Critical (major feature broken)
+        - Major (core feature degraded)
+        - Minor (cosmetic or small bug)
+        - Trivial (typo / no user impact)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Frequency
+      options:
+        - Always
+        - Often
+        - Intermittent
+        - Rare
+        - Hard to reproduce
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      multiple: true
+      options:
+        - Front Office (FO)
+        - Back Office (BO)
+        - Webservice / API
+        - CLI / Cron
+        - Install / Upgrade
+        - Performance
+        - Localization / i18n
+        - Multistore
+        - Theme
+        - Module
+        - Other
+    validations:
+      required: true
+
+  # --- Environment ------------------------------------------------------------
+  - type: input
+    id: tb_version
+    attributes:
+      label: thirty bees version
+      placeholder: "e.g. 1.5.0 stable (commit abcdef1) or edge (commit 1234abc)"
+    validations:
+      required: true
+
+  - type: input
+    id: install_type
+    attributes:
+      label: Install type
+      placeholder: "Clean install / Upgraded (from 1.x.y)"
+    validations:
+      required: true
+
+  - type: input
+    id: theme
+    attributes:
+      label: Theme name & version
+      placeholder: "e.g. community-theme-default 1.1.0, Warehouse 4.5.8, custom <git commit>"
+    validations:
+      required: true
+
+  - type: input
+    id: php
+    attributes:
+      label: PHP version & SAPI
+      placeholder: "e.g. PHP 8.2.21 (FPM) with OPcache"
+    validations:
+      required: true
+
+  - type: input
+    id: db
+    attributes:
+      label: Database & version
+      placeholder: "e.g. MariaDB 10.6.19 / MySQL 8.0.36"
+    validations:
+      required: true
+
+  - type: input
+    id: webserver
+    attributes:
+      label: Web server & OS
+      placeholder: "e.g. Nginx 1.24 on Ubuntu 22.04 / Apache 2.4 on AlmaLinux 9"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: features
+    attributes:
+      label: Setup details
+      options:
+        - label: Multistore enabled
+        - label: Overrides present
+        - label: Non-core modules active
+        - label: CDN / Reverse proxy (Cloudflare, etc.)
+        - label: External cache (Redis, Memcached, APCu)
+        - label: HTTP/2 or HTTP/3 enabled
+        - label: LSCache / Varnish / Nginx micro-cache
+        - label: Composer autoloader present
+
+  - type: textarea
+    id: setup_notes
+    attributes:
+      label: Additional environment notes
+      description: Anything notable about configuration (CCC/Smarty, custom hooks/overrides, PHP extensions), or links to a sanitized phpinfo().
+      placeholder: "CCC: JS minify on, CSS minify off; Smarty force compile off, cache on; Redis object cache; custom override for ProductController; etc."
+      render: text
+
+  # --- Description & reproduction --------------------------------------------
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug description
+      description: What’s wrong? Provide a concise, factual description of the problem.
+      placeholder: "A clear and concise description of the bug…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps from a clean state to the failure. Include sample data, specific settings, and a minimal reproduction if possible.
+      placeholder: |
+        1. Go to Back Office → Catalog → Products
+        2. Create a product with X, Y, Z settings
+        3. Enable debug mode
+        4. Click 'Save' → observe error
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      placeholder: "What you expected to happen…"
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Include exact error messages, stack traces, and visual differences. Drag screenshots/logs into this field.
+      placeholder: "What actually happened…"
+      render: text
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: regression
+    attributes:
+      label: Is this a regression?
+      options:
+        - label: Yes, it worked in a previous version
+        - label: No / not sure
+
+  - type: input
+    id: last_working
+    attributes:
+      label: Last known working version (if regression)
+      placeholder: "e.g. 1.4.2 (commit 9abc123)"
+    validations:
+      required: false
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: If you’ve found a temporary workaround, share it here.
+      placeholder: "e.g. Disabling module X avoids the crash; clearing compiled templates helps until next deploy…"
+      render: text
+
+  # --- Evidence (logs, traces, assets) ---------------------------------------
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / stack trace
+      description: Paste relevant logs and stack traces from debug mode, server error logs, or the browser console.
+      render: shell
+      placeholder: |
+        [Tue Aug 26 10:31:44.123456] PHP Fatal error: Uncaught Exception ...
+        #0 classes/controller/Controller.php(209): ...
+        #1 classes/Dispatcher.php(858): ...
+        #2 admin/index.php(58): ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: http
+    attributes:
+      label: HTTP request/response (optional)
+      description: Curl command, HAR snippet, or response headers if the issue is network-related.
+      render: shell
+      placeholder: |
+        curl -i 'https://example.com/index.php?...'
+        HTTP/2 500
+        content-type: text/html; charset=utf-8
+        ...
+
+  - type: textarea
+    id: modules
+    attributes:
+      label: Active non-core modules (optional)
+      description: List the non-core modules and versions that are active when the bug occurs.
+      placeholder: |
+        mycustommodule 1.2.3
+        vendor/awesomepayment 2.4.1
+
+  - type: textarea
+    id: minimal_repo
+    attributes:
+      label: Minimal reproduction repo / export (optional)
+      description: Link to a minimal public repo, SQL dump with sample data, or a gist with configuration that reproduces the bug.
+      placeholder: "https://github.com/<org>/<repro> or Gist link…"
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Anything else that might be useful (screenshots, videos, related issues/PRs, RFCs).
+      placeholder: "Related: #1234, #5678. Possibly introduced by commit abc123…"
+
+  # --- Security guidance ------------------------------------------------------
+  - type: markdown
+    attributes:
+      value: |
+        ### 🔐 Security
+        If you believe you’ve found a **security vulnerability**, please **do not** open a public issue.
+        Instead, follow the instructions in our **SECURITY.md** (see the “Security policy” contact link on the New Issue page).
