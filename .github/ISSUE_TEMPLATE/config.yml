@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Questions & support
+    url: https://github.com/thirtybees/thirtybees/discussions
+    about: "Ask usage questions and get community help in Discussions."
+  - name: 🔐 Security policy
+    url: https://github.com/thirtybees/thirtybees/security/policy
+    about: "Report security vulnerabilities privately."
+  - name: 📚 Documentation
+    url: https://docs.thirtybees.com/
+    about: "Read official docs and troubleshooting guides."
