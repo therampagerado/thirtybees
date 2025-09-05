@@ -505,10 +505,24 @@ class DispatcherCore
             if ($urlLanguage) {
                 $requestUri = substr($requestUri, strlen($urlLanguage->getUrlCode()) + 1);
                 $_GET['isolang'] = $urlLanguage->iso_code;
-            } elseif (! Tools::getValue('isolang')) {
-                if (! $this->isPhpScriptUrl($requestUri)) {
-                    // no iso code in url, we will fallback to default language
-                    $_GET['isolang'] = $this->getDefaultLanguageIsoCode();
+            } elseif (!Tools::getValue('isolang')) {
+                if (!$this->isPhpScriptUrl($requestUri)) {
+                    // 1) Pick ISO from Accept-Language when enabled, else default
+                    $iso = $this->getIsoFromAcceptLanguageOrDefault();
+                    $_GET['isolang'] = $iso;
+
+                    // 2) Set Context + cookie NOW so canonical redirect uses it
+                    $idLang = (int) Language::getIdByIso($iso);
+                    if ($idLang) {
+                        $ctx = Context::getContext();
+                        $ctx->cookie->id_lang = $idLang;
+                        $ctx->language = new Language($idLang);
+                    }
+
+                    // 3) Cache hint only when we actually used Accept-Language
+                    if (Configuration::get('PS_DETECT_LANG') && !headers_sent()) {
+                        header('Vary: Accept-Language');
+                    }
                 }
             }
         }
@@ -1860,5 +1874,127 @@ class DispatcherCore
         }
 
         return file_exists(_PS_ROOT_DIR_ . $path);
+    }
+    
+    /**
+     * Decide the best language for the first-hit redirect when language-in-URL is enabled.
+     * Honors PS_DETECT_LANG and shop associations; falls back to PS_LANG_DEFAULT.
+     */
+    protected function getNegotiatedLangIdOrDefault(): int
+    {
+        $defaultId = (int) Configuration::get('PS_LANG_DEFAULT');
+
+        // Respect the toggle and header presence
+        if (!Configuration::get('PS_DETECT_LANG')) {
+            return $defaultId;
+        }
+        $header = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+        if ($header === '') {
+            return $defaultId;
+        }
+
+        // Use Tools::parseAcceptLanguage if you added it; otherwise simple parser:
+        $tags = method_exists('Tools', 'parseAcceptLanguage')
+            ? Tools::parseAcceptLanguage($header)
+            : (function (string $h) {
+                $prefs = [];
+                foreach (explode(',', $h) as $part) {
+                    $part = trim($part);
+                    if ($part === '') continue;
+                    $q = 1.0;
+                    if (preg_match('~;q=([0-9.]+)~i', $part, $m)) {
+                        $q = (float) $m[1];
+                        $part = substr($part, 0, strpos($part, ';'));
+                    }
+                    $prefs[$part] = $q;
+                }
+                arsort($prefs, SORT_NUMERIC);
+                return array_keys($prefs);
+            })($header);
+
+        foreach ($tags as $tag) {
+            $tag = mb_strtolower($tag);
+
+            // Try exact IETF (en-gb), then language-only (en)
+            $lang = method_exists('Language', 'getLanguageByIETFCode')
+                ? Language::getLanguageByIETFCode($tag)
+                : null;
+
+            if (!$lang && strpos($tag, '-') !== false) {
+                $lang = method_exists('Language', 'getLanguageByIETFCode')
+                    ? Language::getLanguageByIETFCode(explode('-', $tag)[0])
+                    : null;
+            }
+
+            if (!$lang && strlen($tag) === 2) {
+                $id = (int) Language::getIdByIso($tag);
+                if ($id) $lang = new Language($id);
+            }
+
+            if ($lang && $lang->active && $lang->isAssociatedToShop()) {
+                return (int) $lang->id;
+            }
+        }
+
+        return $defaultId;
+    }
+    
+    /**
+     * Returns the ISO code chosen from Accept-Language (if PS_DETECT_LANG=1),
+     * otherwise the shop's default ISO.
+     */
+    protected function getIsoFromAcceptLanguageOrDefault(): string
+    {
+        $defaultIso = $this->getDefaultLanguageIsoCode();
+
+        if (!Configuration::get('PS_DETECT_LANG')) {
+            return $defaultIso;
+        }
+
+        $header = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
+        if ($header === '') {
+            return $defaultIso;
+        }
+
+        $tags = Tools::parseAcceptLanguageHeader($header);
+
+        // Active + associated languages for this shop
+        $languages = Language::getLanguages(true, Context::getContext()->shop->id);
+        if (!$languages) {
+            return $defaultIso;
+        }
+
+        // Build lookups
+        $byIso  = [];
+        $byIetf = [];
+        foreach ($languages as $row) {
+            $iso  = strtolower((string)($row['iso_code'] ?? ''));
+            $ietf = strtolower((string)($row['language_code'] ?? '')); // may be empty
+            if ($iso) {
+                $byIso[$iso] = $iso;
+                $byIetf[$iso] = $iso; // allow plain "en","bg"
+            }
+            if ($ietf) {
+                $byIetf[$ietf] = $iso;                   // exact IETF
+                $primary = explode('-', $ietf)[0];
+                $byIetf[$primary] = $iso;                // primary subtag
+            }
+        }
+
+        foreach ($tags as $tag) {
+            // exact IETF (en-gb), then primary (en), then ISO-only
+            if (isset($byIetf[$tag])) {
+                return $byIetf[$tag];
+            }
+            $primary = explode('-', $tag)[0];
+            if (isset($byIetf[$primary])) {
+                return $byIetf[$primary];
+            }
+            if (isset($byIso[$primary])) {
+                return $byIso[$primary];
+            }
+        }
+
+        return $defaultIso;
     }
 }

@@ -446,7 +446,8 @@ class ToolsCore
         if (!$cookie) {
             $cookie = Context::getContext()->cookie;
         }
-        /* If language does not exist or is disabled, erase it */
+
+        // 1) Drop invalid/obsolete cookie lang
         if ($cookie->id_lang) {
             $lang = new Language((int) $cookie->id_lang);
             if (!Validate::isLoadedObject($lang) || !$lang->active || !$lang->isAssociatedToShop()) {
@@ -454,39 +455,64 @@ class ToolsCore
             }
         }
 
-        if (!Configuration::get('PS_DETECT_LANG')) {
-            unset($cookie->detect_language);
-        }
+        $detect = (bool) Configuration::get('PS_DETECT_LANG');
 
-        /* Automatically detect language if not already defined, detect_language is set in Cookie::update */
-        if (!Tools::getValue('isolang') && !Tools::getIntValue('id_lang') && (!$cookie->id_lang || isset($cookie->detect_language))
-            && isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])
+        // 2) Accept-Language negotiation (only when enabled and not overridden by URL/param)
+        if (
+            $detect
+            && !Tools::getValue('isolang')
+            && !Tools::getIntValue('id_lang')
+            && empty($cookie->id_lang)
+            && !empty($_SERVER['HTTP_ACCEPT_LANGUAGE'])
         ) {
-            $array = explode(',', mb_strtolower($_SERVER['HTTP_ACCEPT_LANGUAGE']));
-            $string = $array[0];
+            $tags = self::parseAcceptLanguageHeader((string) $_SERVER['HTTP_ACCEPT_LANGUAGE']);
 
-            if (Validate::isLanguageCode($string)) {
-                $lang = Language::getLanguageByIETFCode($string);
-                if (Validate::isLoadedObject($lang) && $lang->active && $lang->isAssociatedToShop()) {
-                    Context::getContext()->language = $lang;
-                    $cookie->id_lang = (int) $lang->id;
+            foreach ($tags as $tag) {
+                $tag = mb_strtolower($tag);
+
+                // Try exact IETF (en-gb), then primary (en)
+                $candidate = Language::getLanguageByIETFCode($tag);
+                if (!$candidate && strpos($tag, '-') !== false) {
+                    $candidate = Language::getLanguageByIETFCode(explode('-', $tag)[0]);
                 }
+
+                // Final fallback: try ISO directly if it looks like 2 letters
+                if (!$candidate && strlen($tag) === 2) {
+                    $id = (int) Language::getIdByIso($tag);
+                    if ($id) {
+                        $tmp = new Language($id);
+                        if (Validate::isLoadedObject($tmp)) {
+                            $candidate = $tmp;
+                        }
+                    }
+                }
+
+                if ($candidate && $candidate->active && $candidate->isAssociatedToShop()) {
+                    Context::getContext()->language = $candidate;
+                    $cookie->id_lang = (int) $candidate->id;
+                    break;
+                }
+            }
+
+            // Caches/proxies should vary only when we actually considered Accept-Language
+            if (!headers_sent()) {
+                header('Vary: Accept-Language');
             }
         }
 
-        if (isset($cookie->detect_language)) {
-            unset($cookie->detect_language);
-        }
+        // 3) Never persist the "force detection" flag
+        unset($cookie->detect_language);
 
-        /* If language file not present, you must use default language file */
+        // 4) Ensure we end with a valid language (fallback to shop default)
         if (!$cookie->id_lang || !Validate::isUnsignedId($cookie->id_lang)) {
             $cookie->id_lang = (int) Configuration::get('PS_LANG_DEFAULT');
         }
 
+        // 5) Load theme translation file for the resolved ISO
         $iso = Language::getIsoById((int) $cookie->id_lang);
         $themeLangFile = _PS_THEME_DIR_.'lang/'.$iso.'.php';
-        if (file_exists($themeLangFile)) {
-            @include_once($themeLangFile);
+        if (is_file($themeLangFile)) {
+            @include_once $themeLangFile;
         }
 
         return $iso;
@@ -654,22 +680,97 @@ class ToolsCore
      */
     public static function getCountry($address = null)
     {
-        $idCountry = Tools::getIntValue('id_country');
-        if ($idCountry && Validate::isInt($idCountry)) {
-            return (int) $idCountry;
-        } elseif (isset($address->id_country) && !$idCountry && $address->id_country) {
-            $idCountry = (int) $address->id_country;
-        } elseif (Configuration::get('PS_DETECT_COUNTRY') && isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
-            preg_match('#(?<=-)\w\w|\w\w(?!-)#', $_SERVER['HTTP_ACCEPT_LANGUAGE'], $array);
-            if (is_array($array) && isset($array[0]) && Validate::isLanguageIsoCode($array[0])) {
-                $idCountry = (int) Country::getByIso($array[0], true);
-            }
-        }
-        if (!isset($idCountry) || !$idCountry) {
-            $idCountry = (int) Configuration::get('PS_COUNTRY_DEFAULT');
+        // 1) Explicit request wins (GET/POST)
+        $idCountry = (int) Tools::getIntValue('id_country');
+        if ($idCountry) {
+            return $idCountry;
         }
 
-        return (int) $idCountry;
+        // 2) Address object (e.g., customer/delivery address)
+        if ($address && !empty($address->id_country)) {
+            return (int) $address->id_country;
+        }
+
+        $defaultId = (int) Configuration::get('PS_COUNTRY_DEFAULT');
+
+        // 3) Infer from Accept-Language when enabled
+        if (Configuration::get('PS_DETECT_COUNTRY')) {
+            $header = isset($_SERVER['HTTP_ACCEPT_LANGUAGE']) ? (string) $_SERVER['HTTP_ACCEPT_LANGUAGE'] : '';
+            if ($header !== '') {
+                // Uses the single canonical parser in Tools
+                $tags = self::parseAcceptLanguageHeader($header);
+
+                foreach ($tags as $tag) {
+                    // Extract only the *region* subtag (e.g. en-GB, zh-Hant-TW, es-419)
+                    // Don't treat plain "en" as a country; ignore numeric regions like "419"
+                    if (preg_match('~^(?:[a-z]{2,3})(?:-[A-Za-z]{4})?(?:-([A-Za-z]{2}|\d{3}))~i', $tag, $m)) {
+                        $region = strtoupper($m[1]);
+                        if (ctype_digit($region)) { // e.g. "419" (Latin America) → no single country
+                            continue;
+                        }
+
+                        $id = (int) Country::getByIso($region, true); // active only
+                        if ($id) {
+                            // Ensure the country is available for the current shop
+                            $country = new Country($id);
+                            if (Validate::isLoadedObject($country) && $country->active && $country->isAssociatedToShop()) {
+                                return (int) $country->id;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4) Fallback
+        return $defaultId;
+    }
+
+    /**
+     * Minimal RFC-style Accept-Language parser.
+     * Returns tags ordered by descending q-value (highest first).
+     * Example: "en-GB,en;q=0.9" → ["en-GB","en"]
+     */
+    public static function parseAcceptLanguageHeader(string $header): array
+    {
+        if ($header === '') {
+            return [];
+        }
+
+        $prefs = [];
+        foreach (explode(',', $header) as $part) {
+            $part = trim($part);
+            if ($part === '') {
+                continue;
+            }
+
+            // Extract q-value (default 1.0)
+            $q = 1.0;
+            if (preg_match('~;q=([0-9.]+)~i', $part, $m)) {
+                $q = (float) $m[1];
+                $part = substr($part, 0, strpos($part, ';'));
+            }
+
+            // Ignore wildcards and disabled langs (q=0)
+            if ($part === '*' || $q <= 0.0) {
+                continue;
+            }
+
+            // Normalize to lowercase IETF-ish (e.g., "en-gb")
+            $tag = mb_strtolower($part);
+
+            // De-duplicate: keep the highest q if repeated
+            if (!isset($prefs[$tag]) || $q > $prefs[$tag]) {
+                $prefs[$tag] = $q;
+            }
+        }
+
+        if (!$prefs) {
+            return [];
+        }
+
+        arsort($prefs, SORT_NUMERIC);
+        return array_keys($prefs);
     }
 
     /**
