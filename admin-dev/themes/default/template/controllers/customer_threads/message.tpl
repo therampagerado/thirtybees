@@ -39,8 +39,28 @@
 		</dd>
 	</dl>
 
-	<dl class="dl-horizontal">
-		<dt>{l s='Message:'}</dt>
-		<dd>{$message.message|escape:'html':'UTF-8'|nl2br}</dd>
-	</dl>
+        <dl class="dl-horizontal">
+                <dt>{l s='Message:'}</dt>
+                <dd>{$message.message|escape:'html':'UTF-8'|nl2br}</dd>
+        </dl>
+        {if !empty($message.attachments)}
+                <dl class="dl-horizontal">
+                        <dt>{l s='Attached files:'}</dt>
+                        <dd>
+                                <ul class="list-unstyled">
+                                        {foreach from=$message.attachments item=attachment}
+                                                <li>
+                                                        {if $attachment.id_customer_message_attachment}
+                                                                <a href="{$link->getAdminLink('AdminCustomerThreads')|escape:'htmlall':'UTF-8'}&amp;showMessageAttachment={$attachment.id_customer_message_attachment|intval}">
+                                                                        {$attachment.original_name|escape:'htmlall':'UTF-8'}
+                                                                </a>
+                                                        {else}
+                                                                {$attachment.original_name|escape:'htmlall':'UTF-8'}
+                                                        {/if}
+                                                </li>
+                                        {/foreach}
+                                </ul>
+                        </dd>
+                </dl>
+        {/if}
 </div>

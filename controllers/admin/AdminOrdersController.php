@@ -751,19 +751,21 @@ class AdminOrdersControllerCore extends AdminController
                         $customerMessage->id_employee = (int) $this->context->employee->id;
                         $customerMessage->message = Tools::getValue('message');
                         $customerMessage->private = Tools::getValue('visibility');
-                        $fileAttachment = Tools::fileAttachment('file_attachment');
-                        if (!empty($fileAttachment['rename']) && rename($fileAttachment['tmp_name'], _PS_UPLOAD_DIR_.basename($fileAttachment['rename']))) {
-                            $customerMessage->file_name = $fileAttachment['rename'];
-                            @chmod(_PS_UPLOAD_DIR_.basename($fileAttachment['rename']), 0664);
+                        $fileAttachments = Tools::fileAttachments('file_attachment');
+                        $storedAttachments = CustomerMessageAttachment::uploadAttachments($fileAttachments, $this->errors);
+
+                        if (!$this->errors && $storedAttachments) {
+                            $customerMessage->file_name = $storedAttachments[0]['file_name'];
                         }
-                        if (!empty($fileAttachment['name']) && $fileAttachment['error'] != 0) {
-                            $this->errors[] = Tools::displayError('An error occurred during the file upload process.');
-                        }
-                        if (!$customerMessage->add()) {
+                        if (!$this->errors && !$customerMessage->add()) {
                             $this->errors[] = Tools::displayError('An error occurred while saving the message.');
-                        } elseif ($customerMessage->private) {
-                            Tools::redirectAdmin(static::$currentIndex.'&id_order='.(int) $order->id.'&vieworder&conf=11&token='.$this->token);
-                        } else {
+                        } elseif (!$this->errors) {
+                            CustomerMessageAttachment::persistAttachments((int)$customerMessage->id, $storedAttachments);
+
+                            if ($customerMessage->private) {
+                                Tools::redirectAdmin(static::$currentIndex.'&id_order='.(int) $order->id.'&vieworder&conf=11&token='.$this->token);
+                            }
+
                             $message = $customerMessage->message;
                             if (Configuration::get('PS_MAIL_TYPE', null, null, $order->id_shop) != Mail::TYPE_TEXT) {
                                 $message = Tools::nl2br($customerMessage->message);
@@ -784,7 +786,7 @@ class AdminOrdersControllerCore extends AdminController
                                 $customer->firstname.' '.$customer->lastname,
                                 null,
                                 null,
-                                $fileAttachment,
+                                $fileAttachments,
                                 null,
                                 _PS_MAIL_DIR_,
                                 true,

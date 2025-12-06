@@ -64,7 +64,7 @@ class ContactControllerCore extends FrontController
                 }
             }
 
-            $fileAttachment = Tools::fileAttachment('fileUpload');
+            $fileAttachments = Tools::fileAttachments('fileUpload');
             $message = (string)Tools::getValue('message');
             if (!($from = Tools::convertEmailToIdn(trim(Tools::getValue('from')))) || !Validate::isEmail($from)) {
                 $this->errors[] = Tools::displayError('Invalid email address.');
@@ -74,11 +74,22 @@ class ContactControllerCore extends FrontController
                 $this->errors[] = Tools::displayError('Invalid message');
             } elseif (!($idContact = Tools::getIntValue('id_contact')) || !(Validate::isLoadedObject($contact = new Contact($idContact, $this->context->language->id)))) {
                 $this->errors[] = Tools::displayError('Please select a subject from the list provided. ');
-            } elseif (!empty($fileAttachment['name']) && $fileAttachment['error'] != 0) {
-                $this->errors[] = Tools::displayError('An error occurred during the file-upload process.');
-            } elseif (!empty($fileAttachment['name']) && !in_array(mb_strtolower(substr($fileAttachment['name'], -4)), $extension) && !in_array(mb_strtolower(substr($fileAttachment['name'], -5)), $extension)) {
-                $this->errors[] = Tools::displayError('Bad file extension');
             } else {
+                foreach ($fileAttachments as $fileAttachment) {
+                    if (!empty($fileAttachment['name']) && $fileAttachment['error'] != 0) {
+                        $this->errors[] = Tools::displayError('An error occurred during the file-upload process.');
+                        break;
+                    }
+                    if (!empty($fileAttachment['name']) && !in_array(mb_strtolower(substr($fileAttachment['name'], -4)), $extension) && !in_array(mb_strtolower(substr($fileAttachment['name'], -5)), $extension)) {
+                        $this->errors[] = Tools::displayError('Bad file extension');
+                        break;
+                    }
+                }
+
+                if ($this->errors) {
+                    return;
+                }
+
                 $customer = $this->context->customer;
                 if (!$customer->id) {
                     $customer->getByEmail($from);
@@ -142,17 +153,19 @@ class ContactControllerCore extends FrontController
                             $cm = new CustomerMessage();
                             $cm->id_customer_thread = $ct->id;
                             $cm->message = $message;
-                            if (!empty($fileAttachment['rename'])) {
-                                $cm->file_name = basename($fileAttachment['rename']);
-                                if (! rename($fileAttachment['tmp_name'], $cm->getFilePath())) {
-                                    $cm->file_name = null;
-                                }
+
+                            $storedAttachments = CustomerMessageAttachment::uploadAttachments($fileAttachments, $this->errors);
+                            if ($storedAttachments) {
+                                $cm->file_name = $storedAttachments[0]['file_name'];
                             }
+
                             $cm->ip_address = (int)ip2long(Tools::getRemoteAddr());
                             $length = ObjectModel::getDefinition('CustomerMessage', 'user_agent')['size'];
                             $cm->user_agent = substr($_SERVER['HTTP_USER_AGENT'], 0, $length);
-                            if (!$cm->add()) {
+                            if (!$this->errors && !$cm->add()) {
                                 $this->errors[] = Tools::displayError('An error occurred while sending the message.');
+                            } elseif (!$this->errors) {
+                                CustomerMessageAttachment::persistAttachments((int)$cm->id, $storedAttachments);
                             }
                         } else {
                             $this->errors[] = Tools::displayError('An error occurred while sending the message.');
@@ -160,7 +173,17 @@ class ContactControllerCore extends FrontController
                     }
 
                     if (! $this->errors) {
-                        $this->sendEmails($message, $from, $fileAttachment, $ct, $contact);
+                        $sentAttachments = [];
+                        foreach ($fileAttachments as $fileAttachment) {
+                            foreach ($storedAttachments as $storedAttachment) {
+                                if (!empty($fileAttachment['rename']) && basename($fileAttachment['rename']) === $storedAttachment['file_name']) {
+                                    $sentAttachments[] = $fileAttachment;
+                                    break;
+                                }
+                            }
+                        }
+
+                        $this->sendEmails($message, $from, $sentAttachments, $ct, $contact);
                     }
                 }
 
@@ -322,13 +345,13 @@ class ContactControllerCore extends FrontController
      *
      * @param array $varList
      * @param Contact $contact
-     * @param array|null $fileAttachment
+     * @param array $fileAttachments
      * @param string $from
      *
      * @return bool
      * @throws PrestaShopException
      */
-    protected function sendNotificationEmail(array $varList, Contact $contact, ?array $fileAttachment, string $from): bool
+    protected function sendNotificationEmail(array $varList, Contact $contact, array $fileAttachments, string $from): bool
     {
         return Mail::Send(
             $this->context->language->id,
@@ -339,7 +362,7 @@ class ContactControllerCore extends FrontController
             $contact->name,
             null,
             null,
-            $fileAttachment,
+            $fileAttachments,
             null,
             _PS_MAIL_DIR_,
             false,
@@ -355,13 +378,13 @@ class ContactControllerCore extends FrontController
      * @param CustomerThread|null $ct
      * @param array $varList
      * @param string $to
-     * @param array|null $fileAttachment
+     * @param array $fileAttachments
      * @param Contact $contact
      *
      * @return bool
      * @throws PrestaShopException
      */
-    protected function sendConfirmationEmail(?CustomerThread $ct, array $varList, string $to, ?array $fileAttachment, Contact $contact): bool
+    protected function sendConfirmationEmail(?CustomerThread $ct, array $varList, string $to, array $fileAttachments, Contact $contact): bool
     {
         if ($contact->send_confirm) {
             if (Validate::isLoadedObject($ct)) {
@@ -374,7 +397,7 @@ class ContactControllerCore extends FrontController
                     null,
                     null,
                     null,
-                    $fileAttachment,
+                    $fileAttachments,
                     null,
                     _PS_MAIL_DIR_,
                     false,
@@ -392,7 +415,7 @@ class ContactControllerCore extends FrontController
                     null,
                     null,
                     null,
-                    $fileAttachment,
+                    $fileAttachments,
                     null,
                     _PS_MAIL_DIR_,
                     false,
@@ -410,14 +433,14 @@ class ContactControllerCore extends FrontController
      *
      * @param string $message
      * @param string $from
-     * @param array|null $fileAttachment
+     * @param array $fileAttachments
      * @param CustomerThread|null $ct
      * @param Contact $contact
      *
      * @return void
      * @throws PrestaShopException
      */
-    protected function sendEmails($message, string $from, ?array $fileAttachment, ?CustomerThread $ct, Contact $contact): void
+    protected function sendEmails($message, string $from, array $fileAttachments, ?CustomerThread $ct, Contact $contact): void
     {
         $varList = [
             '{order_name}' => '-',
@@ -427,8 +450,16 @@ class ContactControllerCore extends FrontController
             '{product_name}' => '',
         ];
 
-        if (isset($fileAttachment['name'])) {
-            $varList['{attached_file}'] = $fileAttachment['name'];
+        if (!empty($fileAttachments)) {
+            $names = [];
+            foreach ($fileAttachments as $fileAttachment) {
+                if (isset($fileAttachment['name'])) {
+                    $names[] = $fileAttachment['name'];
+                }
+            }
+            if ($names) {
+                $varList['{attached_file}'] = implode(', ', $names);
+            }
         }
 
         if (Validate::isLoadedObject($ct) && $ct->id_order) {
@@ -445,11 +476,11 @@ class ContactControllerCore extends FrontController
             }
         }
 
-        if (!$this->sendNotificationEmail($varList, $contact, $fileAttachment, $from)) {
+        if (!$this->sendNotificationEmail($varList, $contact, $fileAttachments, $from)) {
             $this->errors[] = Tools::displayError('An error occurred while sending the message.');
         }
 
-        if (!$this->sendConfirmationEmail($ct, $varList, $from, $fileAttachment, $contact)) {
+        if (!$this->sendConfirmationEmail($ct, $varList, $from, $fileAttachments, $contact)) {
             $this->errors[] = Tools::displayError('An error occurred while sending the message.');
         }
     }

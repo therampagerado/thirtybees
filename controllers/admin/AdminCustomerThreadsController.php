@@ -598,16 +598,17 @@ class AdminCustomerThreadsControllerCore extends AdminController
                 $cm->id_customer_thread = $ct->id;
                 $cm->ip_address = (int) ip2long(Tools::getRemoteAddr());
                 $cm->message = Tools::getValue('reply_message');
-                $fileAttachment = Tools::fileAttachment('file_attachment');
-                if (!empty($fileAttachment['rename']) && rename($fileAttachment['tmp_name'], _PS_UPLOAD_DIR_.basename($fileAttachment['rename']))) {
-                    $cm->file_name = $fileAttachment['rename'];
-                    @chmod(_PS_UPLOAD_DIR_.basename($fileAttachment['rename']), 0664);
+                $fileAttachments = Tools::fileAttachments('file_attachment');
+                $storedAttachments = CustomerMessageAttachment::uploadAttachments($fileAttachments, $this->errors);
+
+                if (!$this->errors && $storedAttachments) {
+                    $cm->file_name = $storedAttachments[0]['file_name'];
                 }
+
                 if (($error = $cm->validateField('message', $cm->message, null, [], true)) !== true) {
                     $this->errors[] = $error;
-                } elseif (!empty($fileAttachment['name']) && $fileAttachment['error'] != 0) {
-                    $this->errors[] = Tools::displayError('An error occurred during the file upload process.');
-                } elseif ($cm->add()) {
+                } elseif (empty($this->errors) && $cm->add()) {
+                    CustomerMessageAttachment::persistAttachments((int)$cm->id, $storedAttachments);
                     $customer = new Customer($ct->id_customer);
                     $params = [
                         '{reply}'     => Tools::nl2br(Tools::getValue('reply_message')),
@@ -638,7 +639,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
                         null,
                         Tools::convertEmailToIdn($fromEmail),
                         $fromName,
-                        $fileAttachment,
+                        $fileAttachments,
                         null,
                         _PS_MAIL_DIR_,
                         true,
@@ -1109,20 +1110,28 @@ class AdminCustomerThreadsControllerCore extends AdminController
             ob_end_clean();
         }
 
-        $customerMessage = new CustomerMessage($customerMessageId);
-        if (! Validate::isLoadedObject($customerMessage)) {
-            die('Customer message not found');
+        $attachment = new CustomerMessageAttachment($customerMessageId);
+        if (Validate::isLoadedObject($attachment) && $attachment->id) {
+            $filepath = $attachment->getFilePath();
+            $filename = $attachment->original_name;
+        } else {
+            $customerMessage = new CustomerMessage($customerMessageId);
+            if (! Validate::isLoadedObject($customerMessage)) {
+                die('Customer message not found');
+            }
+
+            if (! $customerMessage->file_name) {
+                die('This customer message do not have file attachement');
+            }
+
+            if (! $customerMessage->fileExists()) {
+                die('File not found');
+            }
+
+            $filepath = $customerMessage->getFilePath();
+            $filename = basename($customerMessage->file_name);
         }
 
-        if (! $customerMessage->file_name) {
-            die('This customer message do not have file attachement');
-        }
-
-        if (! $customerMessage->fileExists()) {
-            die('File not found');
-        }
-
-        $filename = basename($customerMessage->file_name);
         $contentType = 'application/octet-stream';
 
         // Todo: Once getFileInformations() is also defined for other types than image, the $extensions array can be emptied
@@ -1154,7 +1163,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
 
         header('Content-Type: '.$contentType);
         header('Content-Disposition:attachment;filename="'.$filename.'"');
-        readfile($customerMessage->getFilePath());
+        readfile($filepath);
         die;
     }
 

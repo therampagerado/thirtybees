@@ -128,7 +128,7 @@
 					<div class="row" style="margin-top:10px;">
 						<div class="col-sm-12 form-inline">
 							<label for="file_attachment" class="control-label">{l s='Attach file'}</label>
-							<input type="file" id="file_attachment" name="file_attachment" class="form-control">
+                                                        <input type="file" id="file_attachment" name="file_attachment[]" class="form-control" multiple>
 						</div>
 					</div>
 				</div>

@@ -138,7 +138,9 @@ class CustomerThreadCore extends ObjectModel
             $sql->where('ct.`id_order` = '.(int) $idOrder);
         }
 
-        return Db::readOnly()->getArray($sql);
+        $messages = Db::readOnly()->getArray($sql);
+
+        return CustomerMessage::addAttachmentsToMessages($messages);
     }
 
     /**
@@ -208,7 +210,7 @@ class CustomerThreadCore extends ObjectModel
      */
     public static function getMessageCustomerThreads($idCustomerThread)
     {
-        return Db::readOnly()->getArray(
+        $messages = Db::readOnly()->getArray(
             (new DbQuery())
                 ->select('ct.*, cm.*, cl.name subject, CONCAT(e.firstname, \' \', e.lastname) employee_name')
                 ->select('CONCAT(c.firstname, \' \', c.lastname) customer_name, c.firstname')
@@ -220,6 +222,8 @@ class CustomerThreadCore extends ObjectModel
                 ->where('ct.`id_customer_thread` = '.(int) $idCustomerThread)
                 ->orderBy('cm.`date_add` ASC')
         );
+
+        return CustomerMessage::addAttachmentsToMessages($messages);
     }
 
     /**

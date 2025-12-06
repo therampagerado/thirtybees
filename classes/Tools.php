@@ -4270,6 +4270,67 @@ FileETag none
     }
 
     /**
+     * Returns an array containing information about
+     * HTTP file upload variable ( $_FILES )
+     *
+     * @param string $input File upload field name
+     * @param bool $returnContent If true, returns uploaded file contents
+     *
+     * @return array
+     */
+    public static function fileAttachments(string $input = 'fileUpload', bool $returnContent = true): array
+    {
+        if (empty($_FILES[$input])) {
+            return [];
+        }
+
+        $files = $_FILES[$input];
+
+        $names = (array) ($files['name'] ?? []);
+        $tmpNames = (array) ($files['tmp_name'] ?? []);
+        $types = (array) ($files['type'] ?? []);
+        $errors = (array) ($files['error'] ?? []);
+        $sizes = (array) ($files['size'] ?? []);
+
+        // Normalize single file uploads into arrays
+        $count = max(count($names), count($tmpNames), count($types), count($errors), count($sizes));
+        if ($count === 0 && isset($files['name'])) {
+            $names = [$files['name']];
+            $tmpNames = [$files['tmp_name'] ?? ''];
+            $types = [$files['type'] ?? ''];
+            $errors = [$files['error'] ?? 0];
+            $sizes = [$files['size'] ?? 0];
+            $count = 1;
+        }
+
+        $attachments = [];
+        for ($i = 0; $i < $count; $i++) {
+            $name = $names[$i] ?? '';
+            if ($name === '') {
+                continue;
+            }
+
+            $tmpName = $tmpNames[$i] ?? '';
+            $attachment = [
+                'rename'   => $tmpName ? uniqid().mb_strtolower(substr($name, -5)) : null,
+                'tmp_name' => $tmpName,
+                'name'     => $name,
+                'mime'     => $types[$i] ?? '',
+                'error'    => $errors[$i] ?? 0,
+                'size'     => $sizes[$i] ?? 0,
+            ];
+
+            if ($returnContent && $tmpName) {
+                $attachment['content'] = file_get_contents($tmpName);
+            }
+
+            $attachments[] = $attachment;
+        }
+
+        return $attachments;
+    }
+
+    /**
      * @param string $filename
      *
      * @return bool

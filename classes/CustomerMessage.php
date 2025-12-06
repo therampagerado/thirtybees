@@ -135,7 +135,7 @@ class CustomerMessageCore extends ObjectModel
      */
     public static function getMessagesByOrderId($idOrder, $hidePrivate = true)
     {
-        return Db::readOnly()->getArray(
+        $messages = Db::readOnly()->getArray(
             (new DbQuery())
                 ->select('cm.*')
                 ->select('c.`firstname` AS `cfirstname`')
@@ -152,6 +152,8 @@ class CustomerMessageCore extends ObjectModel
                 ->groupBy('cm.`id_customer_message`')
                 ->orderBy('cm.`date_add` DESC')
         );
+
+        return static::addAttachmentsToMessages($messages);
     }
 
     /**
@@ -190,11 +192,28 @@ class CustomerMessageCore extends ObjectModel
      */
     public function delete()
     {
+        CustomerMessageAttachment::createTable();
+
+        $attachments = CustomerMessageAttachment::getByMessageIds([$this->id]);
+        foreach ($attachments as $messageAttachments) {
+            foreach ($messageAttachments as $attachment) {
+                $filePath = _PS_UPLOAD_DIR_.basename($attachment['file_name']);
+                if (is_file($filePath)) {
+                    unlink($filePath);
+                }
+            }
+        }
+
         if ($this->fileExists()) {
             unlink($this->getFilePath());
         }
 
-        return parent::delete();
+        $result = parent::delete();
+        if ($result) {
+            CustomerMessageAttachment::deleteByMessageId((int)$this->id);
+        }
+
+        return $result;
     }
 
     /**
@@ -219,6 +238,58 @@ class CustomerMessageCore extends ObjectModel
             file_exists($filePath) &&
             is_file($filePath)
         );
+    }
+
+    /**
+     * Attach attachments to the given messages.
+     *
+     * @param array $messages
+     *
+     * @return array
+     *
+     * @throws PrestaShopDatabaseException
+     */
+    public static function addAttachmentsToMessages(array $messages): array
+    {
+        if (!$messages) {
+            return $messages;
+        }
+
+        $ids = [];
+        foreach ($messages as $message) {
+            if (isset($message['id_customer_message'])) {
+                $ids[] = (int)$message['id_customer_message'];
+            }
+        }
+
+        CustomerMessageAttachment::createTable();
+        $attachments = CustomerMessageAttachment::getByMessageIds(array_unique($ids));
+
+        foreach ($messages as &$message) {
+            $messageAttachments = [];
+
+            if (!empty($message['id_customer_message']) && isset($attachments[(int)$message['id_customer_message']])) {
+                foreach ($attachments[(int)$message['id_customer_message']] as $attachment) {
+                    $messageAttachments[] = [
+                        'id_customer_message_attachment' => (int)$attachment['id_customer_message_attachment'],
+                        'file_name'                      => $attachment['file_name'],
+                        'original_name'                  => $attachment['original_name'],
+                    ];
+                }
+            }
+
+            if (!$messageAttachments && !empty($message['file_name'])) {
+                $messageAttachments[] = [
+                    'id_customer_message_attachment' => null,
+                    'file_name'                      => $message['file_name'],
+                    'original_name'                  => basename($message['file_name']),
+                ];
+            }
+
+            $message['attachments'] = $messageAttachments;
+        }
+
+        return $messages;
     }
 
 }
