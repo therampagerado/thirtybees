@@ -598,16 +598,48 @@ class AdminCustomerThreadsControllerCore extends AdminController
                 $cm->id_customer_thread = $ct->id;
                 $cm->ip_address = (int) ip2long(Tools::getRemoteAddr());
                 $cm->message = Tools::getValue('reply_message');
-                $fileAttachment = Tools::fileAttachment('file_attachment');
-                if (!empty($fileAttachment['rename']) && rename($fileAttachment['tmp_name'], _PS_UPLOAD_DIR_.basename($fileAttachment['rename']))) {
-                    $cm->file_name = $fileAttachment['rename'];
-                    @chmod(_PS_UPLOAD_DIR_.basename($fileAttachment['rename']), 0664);
+                $fileAttachments = Tools::fileAttachments('file_attachment');
+                foreach ($fileAttachments as $index => $attachment) {
+                    if (!empty($attachment['rename']) && rename($attachment['tmp_name'], _PS_UPLOAD_DIR_.basename($attachment['rename']))) {
+                        $fileAttachments[$index]['stored_name'] = $attachment['rename'];
+                        if ($index === 0) {
+                            $cm->file_name = $attachment['rename'];
+                        }
+                        @chmod(_PS_UPLOAD_DIR_.basename($attachment['rename']), 0664);
+                    }
                 }
                 if (($error = $cm->validateField('message', $cm->message, null, [], true)) !== true) {
                     $this->errors[] = $error;
-                } elseif (!empty($fileAttachment['name']) && $fileAttachment['error'] != 0) {
+                } elseif (array_reduce($fileAttachments, function ($carry, $attachment) {
+                    return $carry || (!empty($attachment['name']) && $attachment['error'] != 0);
+                }, false)) {
                     $this->errors[] = Tools::displayError('An error occurred during the file upload process.');
                 } elseif ($cm->add()) {
+                    $mailAttachments = [];
+
+                    if ($fileAttachments) {
+                        CustomerMessageAttachment::ensureTableExists();
+                    }
+
+                    foreach ($fileAttachments as $attachment) {
+                        if (empty($attachment['stored_name'])) {
+                            continue;
+                        }
+
+                        $record = new CustomerMessageAttachment();
+                        $record->id_customer_message = (int) $cm->id;
+                        $record->file_name = $attachment['stored_name'];
+                        $record->original_name = $attachment['name'];
+                        $record->mime = $attachment['mime'];
+                        $record->add();
+
+                        $mailAttachments[] = [
+                            'content' => file_get_contents(_PS_UPLOAD_DIR_.basename($attachment['stored_name'])),
+                            'name'    => $attachment['name'],
+                            'mime'    => $attachment['mime'],
+                        ];
+                    }
+
                     $customer = new Customer($ct->id_customer);
                     $params = [
                         '{reply}'     => Tools::nl2br(Tools::getValue('reply_message')),
@@ -638,7 +670,7 @@ class AdminCustomerThreadsControllerCore extends AdminController
                         null,
                         Tools::convertEmailToIdn($fromEmail),
                         $fromName,
-                        $fileAttachment,
+                        $mailAttachments,
                         null,
                         _PS_MAIL_DIR_,
                         true,
@@ -757,6 +789,10 @@ class AdminCustomerThreadsControllerCore extends AdminController
      */
     public function initContent()
     {
+        if ($attachmentId = Tools::getIntValue('downloadCustomerMessageAttachment')) {
+            static::openAttachmentById($attachmentId);
+        }
+
         if ($messageId = Tools::getIntValue('showMessageAttachment')) {
             static::openUploadedFile($messageId);
         }
@@ -1156,6 +1192,35 @@ class AdminCustomerThreadsControllerCore extends AdminController
         header('Content-Disposition:attachment;filename="'.$filename.'"');
         readfile($customerMessage->getFilePath());
         die;
+    }
+
+    /**
+     * @param int $attachmentId
+     *
+     * @return void
+     *
+     * @throws PrestaShopException
+     */
+    protected function openAttachmentById(int $attachmentId)
+    {
+        CustomerMessageAttachment::ensureTableExists();
+
+        $attachment = new CustomerMessageAttachment($attachmentId);
+        if (!Validate::isLoadedObject($attachment)) {
+            die('Customer message attachment not found');
+        }
+
+        if (!$attachment->fileExists()) {
+            die('File not found');
+        }
+
+        $filename = basename($attachment->file_name);
+        $contentType = $attachment->mime ?: 'application/octet-stream';
+
+        header('Content-Type: '.$contentType);
+        header('Content-Disposition: attachment; filename="'.mb_convert_encoding($attachment->original_name, 'ISO-8859-1', 'UTF-8').'"');
+        readfile($attachment->getFilePath());
+        exit;
     }
 
     /**

@@ -194,6 +194,13 @@ class CustomerMessageCore extends ObjectModel
             unlink($this->getFilePath());
         }
 
+        foreach (CustomerMessageAttachment::getByCustomerMessageId((int) $this->id) as $attachment) {
+            if ($attachment->fileExists()) {
+                unlink($attachment->getFilePath());
+            }
+            $attachment->delete();
+        }
+
         return parent::delete();
     }
 
@@ -219,6 +226,21 @@ class CustomerMessageCore extends ObjectModel
             file_exists($filePath) &&
             is_file($filePath)
         );
+    }
+
+    /**
+     * @return CustomerMessageAttachment[]
+     * @throws PrestaShopException
+     */
+    public function getAttachments(): array
+    {
+        $attachments = CustomerMessageAttachment::getByCustomerMessageId((int) $this->id);
+
+        if ($this->file_name) {
+            $attachments[] = CustomerMessageAttachment::fromLegacy($this->file_name);
+        }
+
+        return $attachments;
     }
 
 }

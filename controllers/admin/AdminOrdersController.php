@@ -751,19 +751,45 @@ class AdminOrdersControllerCore extends AdminController
                         $customerMessage->id_employee = (int) $this->context->employee->id;
                         $customerMessage->message = Tools::getValue('message');
                         $customerMessage->private = Tools::getValue('visibility');
-                        $fileAttachment = Tools::fileAttachment('file_attachment');
-                        if (!empty($fileAttachment['rename']) && rename($fileAttachment['tmp_name'], _PS_UPLOAD_DIR_.basename($fileAttachment['rename']))) {
-                            $customerMessage->file_name = $fileAttachment['rename'];
-                            @chmod(_PS_UPLOAD_DIR_.basename($fileAttachment['rename']), 0664);
+                        $fileAttachments = Tools::fileAttachments('file_attachment');
+                        foreach ($fileAttachments as $index => $attachment) {
+                            if (!empty($attachment['rename']) && rename($attachment['tmp_name'], _PS_UPLOAD_DIR_.basename($attachment['rename']))) {
+                                $fileAttachments[$index]['stored_name'] = $attachment['rename'];
+                                if ($index === 0) {
+                                    $customerMessage->file_name = $attachment['rename'];
+                                }
+                                @chmod(_PS_UPLOAD_DIR_.basename($attachment['rename']), 0664);
+                            }
                         }
-                        if (!empty($fileAttachment['name']) && $fileAttachment['error'] != 0) {
+                        if (array_reduce($fileAttachments, function ($carry, $attachment) {
+                            return $carry || (!empty($attachment['name']) && $attachment['error'] != 0);
+                        }, false)) {
                             $this->errors[] = Tools::displayError('An error occurred during the file upload process.');
                         }
                         if (!$customerMessage->add()) {
                             $this->errors[] = Tools::displayError('An error occurred while saving the message.');
-                        } elseif ($customerMessage->private) {
-                            Tools::redirectAdmin(static::$currentIndex.'&id_order='.(int) $order->id.'&vieworder&conf=11&token='.$this->token);
                         } else {
+                            if ($fileAttachments) {
+                                CustomerMessageAttachment::ensureTableExists();
+                            }
+
+                            foreach ($fileAttachments as $attachment) {
+                                if (empty($attachment['stored_name'])) {
+                                    continue;
+                                }
+
+                                $record = new CustomerMessageAttachment();
+                                $record->id_customer_message = (int) $customerMessage->id;
+                                $record->file_name = $attachment['stored_name'];
+                                $record->original_name = $attachment['name'];
+                                $record->mime = $attachment['mime'];
+                                $record->add();
+                            }
+
+                            if ($customerMessage->private) {
+                                Tools::redirectAdmin(static::$currentIndex.'&id_order='.(int) $order->id.'&vieworder&conf=11&token='.$this->token);
+                            }
+
                             $message = $customerMessage->message;
                             if (Configuration::get('PS_MAIL_TYPE', null, null, $order->id_shop) != Mail::TYPE_TEXT) {
                                 $message = Tools::nl2br($customerMessage->message);
@@ -784,7 +810,15 @@ class AdminOrdersControllerCore extends AdminController
                                 $customer->firstname.' '.$customer->lastname,
                                 null,
                                 null,
-                                $fileAttachment,
+                                array_map(function ($attachment) {
+                                    return [
+                                        'content' => file_get_contents(_PS_UPLOAD_DIR_.basename($attachment['stored_name'])),
+                                        'name'    => $attachment['name'],
+                                        'mime'    => $attachment['mime'],
+                                    ];
+                                }, array_filter($fileAttachments, function ($attachment) {
+                                    return !empty($attachment['stored_name']);
+                                })),
                                 null,
                                 _PS_MAIL_DIR_,
                                 true,
@@ -1980,6 +2014,21 @@ class AdminOrdersControllerCore extends AdminController
             $orderState['text-color'] = Tools::getBrightness($orderState['color']) < 128 ? 'white' : 'black';
         }
 
+        $messages = CustomerMessage::getMessagesByOrderId($order->id, false);
+        foreach ($messages as &$message) {
+            $messageAttachments = [];
+            $customerMessage = new CustomerMessage((int) $message['id_customer_message']);
+            foreach ($customerMessage->getAttachments() as $attachment) {
+                $messageAttachments[] = [
+                    'id_customer_message_attachment' => (int) $attachment->id,
+                    'file_name'                      => $attachment->file_name,
+                    'original_name'                  => $attachment->original_name,
+                ];
+            }
+            $message['attachments'] = $messageAttachments;
+        }
+        unset($message);
+
         // Smarty assign
         $this->tpl_view_vars = [
             'order'                        => $order,
@@ -2002,7 +2051,7 @@ class AdminOrdersControllerCore extends AdminController
             'customer_thread_message'      => CustomerThread::getCustomerMessages($order->id_customer, null, $order->id),
             'orderMessages'                => OrderMessage::getOrderMessages($order->id_lang, $order, $customer),
             'orderDocuments'               => $order->getDocuments(),
-            'messages'                     => CustomerMessage::getMessagesByOrderId($order->id, false),
+            'messages'                     => $messages,
             'carrier'                      => new Carrier($order->id_carrier),
             'history'                      => $history,
             'states'                       => OrderState::getOrderStates($this->context->language->id),

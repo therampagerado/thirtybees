@@ -4270,6 +4270,61 @@ FileETag none
     }
 
     /**
+     * Returns a normalized array of uploaded files.
+     *
+     * @param string $input
+     * @param bool $returnContent
+     *
+     * @return array
+     */
+    public static function fileAttachments(string $input = 'fileUpload', bool $returnContent = true): array
+    {
+        $attachments = [];
+
+        if (empty($_FILES[$input])) {
+            return $attachments;
+        }
+
+        $names = $_FILES[$input]['name'];
+        $tmpNames = $_FILES[$input]['tmp_name'];
+        $errors = $_FILES[$input]['error'];
+        $types = $_FILES[$input]['type'];
+        $sizes = $_FILES[$input]['size'];
+
+        if (!is_array($names)) {
+            $single = static::fileAttachment($input, $returnContent);
+            if ($single) {
+                $attachments[] = $single;
+            }
+
+            return $attachments;
+        }
+
+        foreach ($names as $index => $name) {
+            if (empty($name) || empty($tmpNames[$index])) {
+                continue;
+            }
+
+            $attachment = [
+                'rename'   => uniqid().mb_strtolower(substr($name, -5)),
+                'tmp_name' => $tmpNames[$index],
+                'name'     => $name,
+                'mime'     => $types[$index],
+                'error'    => $errors[$index],
+                'size'     => $sizes[$index],
+            ];
+
+            if ($returnContent) {
+                $attachment['content'] = file_get_contents($tmpNames[$index]);
+            }
+
+            $attachments[] = $attachment;
+        }
+
+        return $attachments;
+    }
+
+    /**
      * @param string $filename
      *
      * @return bool
