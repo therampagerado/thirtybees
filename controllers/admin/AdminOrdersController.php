@@ -3309,7 +3309,8 @@ class AdminOrdersControllerCore extends AdminController
     {
         $products = $order->getProducts();
 
-        foreach ($products as &$product) {
+        foreach ($products as $key => &$product) {
+            $product['_order_key'] = $key;
             if ($product['image'] instanceof Image) {
                 $imageId = (int)$product['image']->id;
                 $imagePath = ImageManager::getProductImageThumbnailFilePath($imageId);
@@ -3321,8 +3322,39 @@ class AdminOrdersControllerCore extends AdminController
                 }
             }
         }
+        unset($product);
 
-        ksort($products);
+        if (Configuration::get('TB_ORDER_PRODUCT_GROUPING')) {
+            $products = $this->sortProductsByReference($products);
+        } else {
+            ksort($products);
+        }
+
+        foreach ($products as &$product) {
+            unset($product['_order_key']);
+        }
+        unset($product);
+
+        return $products;
+    }
+
+    /**
+     * Sort order products by product reference (product id) while keeping the original order as fallback
+     *
+     * @param array $products
+     * @return array
+     */
+    protected function sortProductsByReference(array $products)
+    {
+        uasort($products, function (array $firstProduct, array $secondProduct) {
+            $idComparison = (int)$firstProduct['product_id'] <=> (int)$secondProduct['product_id'];
+
+            if ($idComparison !== 0) {
+                return $idComparison;
+            }
+
+            return $firstProduct['_order_key'] <=> $secondProduct['_order_key'];
+        });
 
         return $products;
     }

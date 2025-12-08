@@ -161,6 +161,13 @@ class AdminOrderPreferencesControllerCore extends AdminController
                         'identifier' => 'id',
                         'list'       => $contacts,
                     ],
+                    'TB_ORDER_PRODUCT_GROUPING' => [
+                        'title'      => $this->l('Group ordered products by reference'),
+                        'hint'       => $this->l('Order products with the same reference together in the admin order view to speed up picking.'),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                        'type'       => 'bool',
+                    ],
                 ],
                 'submit' => ['title' => $this->l('Save')],
             ],
