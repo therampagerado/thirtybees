@@ -161,6 +161,13 @@ class AdminOrderPreferencesControllerCore extends AdminController
                         'identifier' => 'id',
                         'list'       => $contacts,
                     ],
+                    'PS_ORDER_PRODUCTS_SORT_BY_ID' => [
+                        'title'      => $this->l('Order products by product ID'),
+                        'hint'       => $this->l('When enabled, products in an order are grouped by product reference in the admin order view.'),
+                        'validation' => 'isBool',
+                        'cast'       => 'intval',
+                        'type'       => 'bool',
+                    ],
                 ],
                 'submit' => ['title' => $this->l('Save')],
             ],

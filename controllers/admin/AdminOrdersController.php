@@ -3322,7 +3322,17 @@ class AdminOrdersControllerCore extends AdminController
             }
         }
 
-        ksort($products);
+        if (Configuration::get('PS_ORDER_PRODUCTS_SORT_BY_ID')) {
+            uasort($products, function (array $first, array $second) {
+                if ($first['product_id'] === $second['product_id']) {
+                    return $first['id_order_detail'] <=> $second['id_order_detail'];
+                }
+
+                return $first['product_id'] <=> $second['product_id'];
+            });
+        } else {
+            ksort($products);
+        }
 
         return $products;
     }
