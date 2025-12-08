@@ -3309,7 +3309,9 @@ class AdminOrdersControllerCore extends AdminController
     {
         $products = $order->getProducts();
 
-        foreach ($products as &$product) {
+        $sortByProductId = (bool)Configuration::get('PS_ORDER_SORT_PRODUCTS_BY_ID');
+
+        foreach ($products as $position => &$product) {
             if ($product['image'] instanceof Image) {
                 $imageId = (int)$product['image']->id;
                 $imagePath = ImageManager::getProductImageThumbnailFilePath($imageId);
@@ -3320,9 +3322,26 @@ class AdminOrdersControllerCore extends AdminController
                     $product['image_size'] = false;
                 }
             }
+            if ($sortByProductId) {
+                $product['_original_position'] = $position;
+            }
         }
 
-        ksort($products);
+        if ($sortByProductId) {
+            usort($products, function ($left, $right) {
+                if ($left['product_id'] === $right['product_id']) {
+                    return $left['_original_position'] <=> $right['_original_position'];
+                }
+
+                return ($left['product_id'] < $right['product_id']) ? -1 : 1;
+            });
+
+            foreach ($products as &$product) {
+                unset($product['_original_position']);
+            }
+        } else {
+            ksort($products);
+        }
 
         return $products;
     }
