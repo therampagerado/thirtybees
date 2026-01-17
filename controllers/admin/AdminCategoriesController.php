@@ -908,6 +908,9 @@ class AdminCategoriesControllerCore extends AdminController
             $this->multishopOverwriteData = $this->buildMultishopOverwriteData();
             if (!empty($this->multishopOverwriteData['differences'])) {
                 $this->warnings[] = $this->l('This category already has different text values for some fields in different shops. When editing it in All shops context, please review the differences and decide on the appropriate action.');
+                $this->display = 'edit';
+                $this->id_object = Tools::getIntValue($this->identifier);
+                $this->loadObject(true);
                 return false;
             }
         }
