@@ -544,7 +544,9 @@ class AdminCategoriesControllerCore extends AdminController
         if ($this->shouldCheckMultishopOverwrite() && !$this->getMultishopOverwriteAction()) {
             $overwriteData = $this->buildMultishopOverwriteData();
             if (!empty($overwriteData['differences'])) {
-                $this->warnings[] = $this->l('This category already has different text values for some fields in different shops. When editing it in All shops context, please review the differences and decide on the appropriate action.');
+                $warning = $this->l('This category already has different text values for some fields in different shops. When editing it in All shops context, please review the differences and decide on the appropriate action.');
+                $warning .= $this->formatMultishopOverwriteDifferences($overwriteData['differences']);
+                $this->warnings[] = $warning;
             }
         }
 
@@ -988,6 +990,35 @@ class AdminCategoriesControllerCore extends AdminController
         }
 
         return null;
+    }
+
+    /**
+     * @param array $differences
+     *
+     * @return string
+     */
+    protected function formatMultishopOverwriteDifferences(array $differences): string
+    {
+        if (!$differences) {
+            return '';
+        }
+
+        $lines = ['<ul>'];
+        foreach ($differences as $difference) {
+            $shopName = $difference['shop_name'] ?? '';
+            $lines[] = '<li>'.Tools::safeOutput($shopName);
+            if (!empty($difference['fields'])) {
+                $lines[] = '<ul>';
+                foreach ($difference['fields'] as $field) {
+                    $lines[] = '<li>'.Tools::safeOutput($field).'</li>';
+                }
+                $lines[] = '</ul>';
+            }
+            $lines[] = '</li>';
+        }
+        $lines[] = '</ul>';
+
+        return '<br>'.implode('', $lines);
     }
 
     /**
