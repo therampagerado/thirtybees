@@ -69,6 +69,13 @@ $(function () {
       $input = $('<input type="hidden">').attr('name', fieldName).appendTo($form);
     }
     $input.val(action);
+    var submitActionName = $form.find('input[name="category_multishop_submit_action"]').val();
+    if (submitActionName) {
+      var $submitInput = $form.find('input[name="' + submitActionName + '"]');
+      if (!$submitInput.length) {
+        $('<input type="hidden">').attr('name', submitActionName).val('1').appendTo($form);
+      }
+    }
     $form.submit();
   };
 

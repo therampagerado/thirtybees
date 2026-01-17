@@ -83,6 +83,11 @@ class AdminCategoriesControllerCore extends AdminController
     protected $multishopOverwriteAction = null;
 
     /**
+     * @var string|null
+     */
+    protected $multishopOverwriteSubmitAction = null;
+
+    /**
      * AdminCategoriesControllerCore constructor.
      *
      * @throws PrestaShopException
@@ -700,6 +705,10 @@ class AdminCategoriesControllerCore extends AdminController
                     'name' => 'category_multishop_overwrite_action',
                 ],
                 [
+                    'type' => 'hidden',
+                    'name' => 'category_multishop_submit_action',
+                ],
+                [
                     'type'              => 'group',
                     'label'             => $this->l('Group access'),
                     'name'              => 'groupBox',
@@ -729,6 +738,10 @@ class AdminCategoriesControllerCore extends AdminController
         $this->tpl_form_vars['shared_category'] = Validate::isLoadedObject($obj) && $obj->hasMultishopEntries();
         $this->tpl_form_vars['PS_ALLOW_ACCENTED_CHARS_URL'] = (int) Configuration::get('PS_ALLOW_ACCENTED_CHARS_URL');
         $this->tpl_form_vars['displayBackOfficeCategory'] = Hook::displayHook('displayBackOfficeCategory');
+
+        if ($this->multishopOverwriteSubmitAction) {
+            $this->fields_value['category_multishop_submit_action'] = $this->multishopOverwriteSubmitAction;
+        }
 
         if ($this->multishopOverwriteData) {
             Media::addJsDef(
@@ -908,6 +921,7 @@ class AdminCategoriesControllerCore extends AdminController
             $this->multishopOverwriteData = $this->buildMultishopOverwriteData();
             if (!empty($this->multishopOverwriteData['differences'])) {
                 $this->warnings[] = $this->l('This category already has different text values for some fields in different shops. When editing it in All shops context, please review the differences and decide on the appropriate action.');
+                $this->multishopOverwriteSubmitAction = $this->getMultishopSubmitActionName();
                 $this->display = 'edit';
                 $this->id_object = Tools::getIntValue($this->identifier);
                 $this->loadObject(true);
@@ -951,6 +965,26 @@ class AdminCategoriesControllerCore extends AdminController
         $action = Tools::getValue('category_multishop_overwrite_action');
         if (in_array($action, [static::MULTISHOP_OVERWRITE_ALL, static::MULTISHOP_OVERWRITE_EMPTY], true)) {
             return $action;
+        }
+
+        return null;
+    }
+
+    /**
+     * @return string|null
+     */
+    protected function getMultishopSubmitActionName()
+    {
+        $submitButtons = [
+            'submitAdd'.$this->table.'AndStay',
+            'submitAdd'.$this->table.'AndBackToParent',
+            'submitAdd'.$this->table,
+        ];
+
+        foreach ($submitButtons as $submitButton) {
+            if (Tools::isSubmit($submitButton)) {
+                return $submitButton;
+            }
         }
 
         return null;
