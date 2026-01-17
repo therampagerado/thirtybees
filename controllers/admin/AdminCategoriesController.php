@@ -39,6 +39,8 @@ class AdminCategoriesControllerCore extends AdminController
     const DELETE_MODE_DELETE = 'delete';
     const DELETE_MODE_LINK = 'link';
     const DELETE_MODE_LINK_AND_DISABLE = 'linkanddisable';
+    const MULTISHOP_OVERWRITE_ALL = 'all';
+    const MULTISHOP_OVERWRITE_EMPTY = 'empty';
 
     /**
      * @var bool does the product have to be removed during the delete process
@@ -705,6 +707,8 @@ class AdminCategoriesControllerCore extends AdminController
         $this->tpl_form_vars['shared_category'] = Validate::isLoadedObject($obj) && $obj->hasMultishopEntries();
         $this->tpl_form_vars['PS_ALLOW_ACCENTED_CHARS_URL'] = (int) Configuration::get('PS_ALLOW_ACCENTED_CHARS_URL');
         $this->tpl_form_vars['displayBackOfficeCategory'] = Hook::displayHook('displayBackOfficeCategory');
+        $this->tpl_form_vars['multishop_overwrite_enabled'] = $this->shouldCheckMultishopOverwrite();
+        $this->tpl_form_vars['multishop_overwrite_field_labels'] = $this->getMultishopTextFieldLabels();
 
         // Display this field only if multistore option is enabled
         if (Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE') && Tools::isSubmit('add'.$this->table.'root')) {
@@ -775,6 +779,215 @@ class AdminCategoriesControllerCore extends AdminController
     }
 
     /**
+     * @throws PrestaShopException
+     */
+    public function ajaxProcessCategoryShopDifferences()
+    {
+        if (!$this->shouldCheckMultishopOverwrite()) {
+            $this->ajaxDie(json_encode(['hasDifferences' => false, 'shops' => []]));
+        }
+
+        $idCategory = Tools::getIntValue($this->identifier);
+        if (!$idCategory) {
+            $this->ajaxDie(json_encode(['hasDifferences' => false, 'shops' => []]));
+        }
+
+        $submittedValues = $this->getSubmittedTextFieldValues();
+        $differences = $this->getTextFieldDifferences($idCategory, $submittedValues);
+        $shops = [];
+
+        foreach ($differences as $idShop => $fields) {
+            $shop = Shop::getShop($idShop);
+            $shops[] = [
+                'id_shop' => (int) $idShop,
+                'name' => $shop ? $shop['name'] : sprintf($this->l('Shop %d'), (int) $idShop),
+                'fields' => array_values($fields),
+            ];
+        }
+
+        $this->ajaxDie(json_encode([
+            'hasDifferences' => !empty($shops),
+            'shops' => $shops,
+        ]));
+    }
+
+    /**
+     * @return bool
+     */
+    protected function shouldCheckMultishopOverwrite()
+    {
+        return Configuration::get('PS_MULTISHOP_FEATURE_ACTIVE')
+            && Shop::isFeatureActive()
+            && Shop::getContext() === Shop::CONTEXT_ALL
+            && (int) Tools::getIntValue($this->identifier) > 0;
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function getMultishopTextFields()
+    {
+        return [
+            'name',
+            'description',
+            'additional_description',
+            'link_rewrite',
+            'meta_title',
+            'meta_keywords',
+            'meta_description',
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    protected function getMultishopTextFieldLabels()
+    {
+        return [
+            'name' => $this->l('Name'),
+            'description' => $this->l('Description'),
+            'additional_description' => $this->l('Additional description'),
+            'link_rewrite' => $this->l('Friendly URL'),
+            'meta_title' => $this->l('Meta title'),
+            'meta_keywords' => $this->l('Meta keywords'),
+            'meta_description' => $this->l('Meta description'),
+        ];
+    }
+
+    /**
+     * @return array
+     */
+    protected function getSubmittedTextFieldValues()
+    {
+        $values = [];
+        $languages = Language::getLanguages(false);
+        foreach ($this->getMultishopTextFields() as $field) {
+            foreach ($languages as $language) {
+                $idLang = (int) $language['id_lang'];
+                $values[$field][$idLang] = (string) Tools::getValue($field.'_'.$idLang, '');
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * @param int $idCategory
+     *
+     * @return array
+     */
+    protected function getCategoryLangValues($idCategory)
+    {
+        $shopIds = Shop::getContextListShopID();
+        if (empty($shopIds)) {
+            return [];
+        }
+
+        $fields = $this->getMultishopTextFields();
+        $query = 'SELECT id_shop, id_lang, '.implode(', ', array_map('bqSQL', $fields)).'
+            FROM '._DB_PREFIX_.'category_lang
+            WHERE id_category = '.(int) $idCategory.'
+            AND id_shop IN ('.implode(', ', array_map('intval', $shopIds)).')';
+
+        $rows = Db::getInstance()->executeS($query);
+        $values = [];
+
+        foreach ($rows as $row) {
+            $idShop = (int) $row['id_shop'];
+            $idLang = (int) $row['id_lang'];
+            foreach ($fields as $field) {
+                $values[$idShop][$idLang][$field] = (string) $row[$field];
+            }
+        }
+
+        return $values;
+    }
+
+    /**
+     * @param int $idCategory
+     * @param array $submittedValues
+     *
+     * @return array
+     */
+    protected function getTextFieldDifferences($idCategory, array $submittedValues)
+    {
+        $storedValues = $this->getCategoryLangValues($idCategory);
+        $differences = [];
+        $languages = Language::getLanguages(false);
+
+        foreach ($storedValues as $idShop => $langValues) {
+            foreach ($this->getMultishopTextFields() as $field) {
+                foreach ($languages as $language) {
+                    $idLang = (int) $language['id_lang'];
+                    $submitted = isset($submittedValues[$field][$idLang]) ? (string) $submittedValues[$field][$idLang] : '';
+                    $stored = isset($langValues[$idLang][$field]) ? (string) $langValues[$idLang][$field] : '';
+                    if ($submitted !== $stored) {
+                        $differences[$idShop][$field] = $field;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $differences;
+    }
+
+    /**
+     * @param int $idCategory
+     * @param array $originalValues
+     * @param array $submittedValues
+     *
+     * @return void
+     */
+    protected function restoreNonEmptyTextFields($idCategory, array $originalValues, array $submittedValues)
+    {
+        if (empty($originalValues)) {
+            return;
+        }
+
+        $fields = $this->getMultishopTextFields();
+        $languages = Language::getLanguages(false);
+        $conn = Db::getInstance();
+
+        foreach ($originalValues as $idShop => $langValues) {
+            foreach ($languages as $language) {
+                $idLang = (int) $language['id_lang'];
+                if (!isset($langValues[$idLang])) {
+                    continue;
+                }
+
+                $restore = [];
+                foreach ($fields as $field) {
+                    $original = isset($langValues[$idLang][$field]) ? (string) $langValues[$idLang][$field] : '';
+                    if (!$this->isTextValueEmpty($original)) {
+                        $restore[$field] = $original;
+                    } else {
+                        $submitted = isset($submittedValues[$field][$idLang]) ? (string) $submittedValues[$field][$idLang] : '';
+                        if ($this->isTextValueEmpty($submitted)) {
+                            $restore[$field] = $submitted;
+                        }
+                    }
+                }
+
+                if (!empty($restore)) {
+                    $where = 'id_category = '.(int) $idCategory.' AND id_lang = '.(int) $idLang.' AND id_shop = '.(int) $idShop;
+                    $conn->update('category_lang', $restore, $where);
+                }
+            }
+        }
+    }
+
+    /**
+     * @param string $value
+     *
+     * @return bool
+     */
+    protected function isTextValueEmpty($value)
+    {
+        return trim(strip_tags((string) $value)) === '';
+    }
+
+    /**
      * @return bool
      *
      * @throws PrestaShopDatabaseException
@@ -787,6 +1000,40 @@ class AdminCategoriesControllerCore extends AdminController
         }
 
         return parent::postProcess();
+    }
+
+    /**
+     * @return ObjectModel|false
+     *
+     * @throws PrestaShopException
+     */
+    public function processUpdate()
+    {
+        if ($this->shouldCheckMultishopOverwrite()) {
+            $idCategory = Tools::getIntValue($this->identifier);
+            $submittedValues = $this->getSubmittedTextFieldValues();
+            $differences = $this->getTextFieldDifferences($idCategory, $submittedValues);
+            $overwriteMode = (string) Tools::getValue('multishop_overwrite');
+
+            if (empty($overwriteMode) && !empty($differences)) {
+                $this->errors[] = $this->l('This category has different values across shops. Please confirm how to proceed before saving.');
+                $this->display = 'edit';
+
+                return false;
+            }
+
+            if ($overwriteMode === static::MULTISHOP_OVERWRITE_EMPTY) {
+                $originalValues = $this->getCategoryLangValues($idCategory);
+                $result = parent::processUpdate();
+                if ($result && empty($this->errors)) {
+                    $this->restoreNonEmptyTextFields($idCategory, $originalValues, $submittedValues);
+                }
+
+                return $result;
+            }
+        }
+
+        return parent::processUpdate();
     }
 
     /**
