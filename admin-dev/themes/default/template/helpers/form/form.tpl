@@ -42,6 +42,9 @@
 	{if !empty($submit_action)}
 		<input type="hidden" name="{$submit_action}" value="1" />
 	{/if}
+	{if isset($multishop_overwrite)}
+		<input type="hidden" name="multishop_overwrite_action" id="multishop_overwrite_action" value="" />
+	{/if}
 	{foreach $fields as $f => $fieldset}
 		{block name="fieldset"}
 		{capture name='fieldset_name'}{counter name='fieldset_name'}{/capture}
@@ -816,6 +819,73 @@
 </form>
 {/block}
 {block name="after"}{/block}
+{if isset($multishop_overwrite)}
+<div class="modal fade" id="multishop-overwrite-modal" tabindex="-1" role="dialog" aria-labelledby="multishop-overwrite-title">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal" aria-label="{l s='Close'}"><span aria-hidden="true">&times;</span></button>
+				<h4 class="modal-title" id="multishop-overwrite-title">{$multishop_overwrite.title|escape:'html':'UTF-8'}</h4>
+			</div>
+			<div class="modal-body">
+				<p>{$multishop_overwrite.message|escape:'html':'UTF-8'}</p>
+				<ul class="list-unstyled">
+					{foreach from=$multishop_overwrite.shops item=shop}
+						<li>
+							<strong>{$shop.name|escape:'html':'UTF-8'}</strong>
+							{if $shop.fields|count}
+								<ul>
+									{foreach from=$shop.fields item=field}
+										<li>{$field|escape:'html':'UTF-8'}</li>
+									{/foreach}
+								</ul>
+							{/if}
+						</li>
+					{/foreach}
+				</ul>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" id="multishop-overwrite-confirm-all">{$multishop_overwrite.confirm_all|escape:'html':'UTF-8'}</button>
+				<button type="button" class="btn btn-default" id="multishop-overwrite-confirm-empty">{$multishop_overwrite.confirm_empty|escape:'html':'UTF-8'}</button>
+				<button type="button" class="btn btn-link" id="multishop-overwrite-cancel" data-dismiss="modal">{$multishop_overwrite.cancel|escape:'html':'UTF-8'}</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	$(document).ready(function () {
+		var $action = $('#multishop_overwrite_action');
+		if (!$action.length) {
+			return;
+		}
+		var $form = $action.closest('form');
+		var $modal = $('#multishop-overwrite-modal');
+		var isSubmitting = false;
+
+		$form.on('submit', function (event) {
+			if (isSubmitting) {
+				return;
+			}
+			if (!$action.val()) {
+				event.preventDefault();
+				$modal.modal('show');
+			}
+		});
+
+		$('#multishop-overwrite-confirm-all').on('click', function () {
+			isSubmitting = true;
+			$action.val('overwrite_all');
+			$form.submit();
+		});
+
+		$('#multishop-overwrite-confirm-empty').on('click', function () {
+			isSubmitting = true;
+			$action.val('overwrite_empty');
+			$form.submit();
+		});
+	});
+</script>
+{/if}
 
 {if isset($tinymce) && $tinymce}
 <script type="text/javascript">
