@@ -234,17 +234,6 @@ class AdminCategoriesControllerCore extends AdminController
     }
 
     /**
-     * @return void
-     *
-     * @throws PrestaShopException
-     */
-    public function setMedia()
-    {
-        parent::setMedia();
-        $this->addJS(_PS_JS_DIR_.'admin/categories_multishop_overwrite.js');
-    }
-
-    /**
      * @throws PrestaShopException
      * @throws SmartyException
      */
@@ -271,6 +260,7 @@ class AdminCategoriesControllerCore extends AdminController
         parent::setMedia();
         $this->addJqueryUi('ui.widget');
         $this->addJqueryPlugin('tagify');
+        $this->addJS(_PS_JS_DIR_.'admin/categories_multishop_overwrite.js');
     }
 
     /**
@@ -544,6 +534,10 @@ class AdminCategoriesControllerCore extends AdminController
         $obj = $this->loadObject(true);
         if (! $obj) {
             return;
+        }
+
+        if ($this->shouldCheckMultishopOverwrite() && !$this->getMultishopOverwriteAction()) {
+            $this->multishopOverwriteData = $this->buildMultishopOverwriteData();
         }
 
         $context = $this->context;
@@ -910,7 +904,7 @@ class AdminCategoriesControllerCore extends AdminController
         if ($this->shouldCheckMultishopOverwrite() && !$this->multishopOverwriteAction) {
             $this->multishopOverwriteData = $this->buildMultishopOverwriteData();
             if (!empty($this->multishopOverwriteData['differences'])) {
-                $this->warnings[] = $this->l('This category already has different text values for some fields in some shops. When saving, please review the differences and decide on the appropriate action.');
+                $this->warnings[] = $this->l('This category already has different text values for some fields in different shops. When editing it in All shops context, please review the differences and decide on the appropriate action.');
                 return false;
             }
         }
