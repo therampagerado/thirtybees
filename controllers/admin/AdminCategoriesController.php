@@ -1050,7 +1050,7 @@ class AdminCategoriesControllerCore extends AdminController
             $languageNames[(int) $language['id_lang']] = $language['name'];
         }
 
-        $shops = Shop::getShops(true, null, true);
+        $shops = Shop::getShops(true, null, false);
         $shopNames = [];
         foreach ($shops as $shop) {
             $shopNames[(int) $shop['id_shop']] = $shop['name'];
