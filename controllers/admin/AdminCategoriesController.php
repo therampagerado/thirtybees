@@ -740,7 +740,7 @@ class AdminCategoriesControllerCore extends AdminController
                     'categoryMultishopOverwriteActionField' => 'category_multishop_overwrite_action',
                     'categoryMultishopOverwriteTitle' => $this->l('Different values found in shops'),
                     'categoryMultishopOverwriteMessage' => $this->l('This category contains different text values per shop. Choose how to proceed:'),
-                    'categoryMultishopOverwriteConfirmLabel' => $this->l('Overwrite all shops'),
+                    'categoryMultishopOverwriteConfirmLabel' => $this->l('Overwrite those fields for all shops'),
                     'categoryMultishopOverwriteEmptyLabel' => $this->l('Only fill empty values'),
                     'categoryMultishopOverwriteCancelLabel' => $this->l('Cancel'),
                     'categoryMultishopOverwriteShopLabel' => $this->l('Shop'),
@@ -910,7 +910,7 @@ class AdminCategoriesControllerCore extends AdminController
         if ($this->shouldCheckMultishopOverwrite() && !$this->multishopOverwriteAction) {
             $this->multishopOverwriteData = $this->buildMultishopOverwriteData();
             if (!empty($this->multishopOverwriteData['differences'])) {
-                $this->warnings[] = $this->l('This category has different text values in some shops. Review the list before saving.');
+                $this->warnings[] = $this->l('This category already has different text values for some fields in some shops. When saving, please review the differences and decide on the appropriate action.');
                 return false;
             }
         }
@@ -940,8 +940,7 @@ class AdminCategoriesControllerCore extends AdminController
     protected function shouldCheckMultishopOverwrite(): bool
     {
         return Shop::isFeatureActive()
-            && Shop::getContext() === Shop::CONTEXT_ALL
-            && $this->display === 'edit';
+            && Shop::getContext() === Shop::CONTEXT_ALL;
     }
 
     /**
