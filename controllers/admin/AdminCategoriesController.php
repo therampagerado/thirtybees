@@ -920,7 +920,8 @@ class AdminCategoriesControllerCore extends AdminController
         $this->multishopOverwriteAction = $this->getMultishopOverwriteAction();
 
         if ($this->shouldCheckMultishopOverwrite() && !$this->multishopOverwriteAction) {
-            $this->multishopOverwriteData = $this->buildMultishopOverwriteData();
+            $submittedValues = $this->getSubmittedLangValues(array_keys($this->getMultishopTextFields()));
+            $this->multishopOverwriteData = $this->buildMultishopOverwriteData($submittedValues);
             if (!empty($this->multishopOverwriteData['differences'])) {
                 $this->warnings[] = $this->l('This category already has different text values for some fields in different shops. When editing it in All shops context, please review the differences and decide on the appropriate action.');
                 $this->multishopOverwriteSubmitAction = $this->getMultishopSubmitActionName();
@@ -978,9 +979,9 @@ class AdminCategoriesControllerCore extends AdminController
     protected function getMultishopSubmitActionName()
     {
         $submitButtons = [
-            'submitAdd'.$this->table.'AndStay',
             'submitAdd'.$this->table.'AndBackToParent',
             'submitAdd'.$this->table,
+            'submitAdd'.$this->table.'AndStay',
         ];
 
         foreach ($submitButtons as $submitButton) {
@@ -1100,7 +1101,14 @@ class AdminCategoriesControllerCore extends AdminController
      *
      * @throws PrestaShopException
      */
-    protected function buildMultishopOverwriteData(): array
+    /**
+     * @param array|null $submittedValues
+     *
+     * @return array
+     *
+     * @throws PrestaShopException
+     */
+    protected function buildMultishopOverwriteData(array $submittedValues = null): array
     {
         $idCategory = Tools::getIntValue($this->identifier);
         if (!$idCategory) {
@@ -1111,7 +1119,6 @@ class AdminCategoriesControllerCore extends AdminController
         $fields = $this->getMultishopTextFields();
         $fieldNames = array_keys($fields);
         $storedValues = $this->getCategoryLangValuesByShop($idCategory, $shopIds, $fieldNames);
-        $submittedValues = $this->getSubmittedLangValues($fieldNames);
         $languages = Language::getLanguages(false);
         $languageNames = [];
         foreach ($languages as $language) {
@@ -1126,14 +1133,19 @@ class AdminCategoriesControllerCore extends AdminController
 
         $differences = [];
         $hasMultipleLanguages = count($languages) > 1;
+        $baselineShopId = $shopIds ? (int) reset($shopIds) : null;
         foreach ($shopIds as $shopId) {
             $shopDifferences = [];
             foreach ($languages as $language) {
                 $langId = (int) $language['id_lang'];
                 foreach ($fieldNames as $field) {
                     $storedValue = $storedValues[$shopId][$langId][$field] ?? '';
-                    $submittedValue = $submittedValues[$field][$langId] ?? '';
-                    if ($storedValue !== $submittedValue) {
+                    if ($submittedValues !== null) {
+                        $compareValue = $submittedValues[$field][$langId] ?? '';
+                    } else {
+                        $compareValue = $storedValues[$baselineShopId][$langId][$field] ?? '';
+                    }
+                    if ($storedValue !== $compareValue) {
                         $label = $fields[$field];
                         if ($hasMultipleLanguages) {
                             $label .= ' ('.$languageNames[$langId].')';
