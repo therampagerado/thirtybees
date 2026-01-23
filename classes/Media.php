@@ -108,6 +108,11 @@ class MediaCore
     protected static $inline_script_src = [];
 
     /**
+     * @var array list of javascript external scripts attributes (deferred)
+     */
+    protected static $defer_script_attributes = [];
+
+    /**
      * @var string used for preg_replace_callback parameter (avoid global)
      */
     protected static $current_css_file;
@@ -898,6 +903,16 @@ class MediaCore
     }
 
     /**
+     * Get script attributes for deferred external scripts.
+     *
+     * @return array
+     */
+    public static function getDeferredScriptAttributes()
+    {
+        return Media::$defer_script_attributes;
+    }
+
+    /**
      * Add a new javascript definition at bottom of page
      *
      * @param string|int|bool|float|array $jsDef
@@ -986,6 +1001,10 @@ class MediaCore
                         }
                     }
                     if (!in_array($src, Media::$inline_script_src) && !$script->getAttribute(Media::$pattern_keepinline)) {
+                        $attributes = Media::getScriptAttributesFromDom($script);
+                        if (!empty($attributes) && !isset(Media::$defer_script_attributes[$src])) {
+                            Media::$defer_script_attributes[$src] = Media::formatScriptAttributes($attributes);
+                        }
                         Context::getContext()->controller->addJS($src);
                     }
                 }
@@ -1022,7 +1041,16 @@ class MediaCore
         }
 
         /* This is an inline script, add its content to inline scripts stack then remove it from content */
-        if (!empty($inline) && preg_match(Media::$pattern_js, $original) !== false && !preg_match('/'.Media::$pattern_keepinline.'/', $original) && Media::$inline_script[] = $inline) {
+        if (!empty($inline) && preg_match(Media::$pattern_js, $original) !== false && !preg_match('/'.Media::$pattern_keepinline.'/', $original)) {
+            $attributes = Media::getScriptAttributesFromTag($original);
+            if (!empty($attributes)) {
+                Media::$inline_script[] = [
+                    'content' => $inline,
+                    'attributes' => Media::formatScriptAttributes($attributes),
+                ];
+            } else {
+                Media::$inline_script[] = $inline;
+            }
             return '';
         }
         /* This is an external script, if it already belongs to js_files then remove it from content */
@@ -1041,6 +1069,90 @@ class MediaCore
         /* return original string because no match was found */
 
         return "\n".$original;
+    }
+
+    /**
+     * Extract script attributes from DOMElement.
+     *
+     * @param DOMElement $script
+     *
+     * @return array
+     */
+    protected static function getScriptAttributesFromDom(DOMElement $script)
+    {
+        $attributes = [];
+        if ($script->hasAttribute('async')) {
+            $attributes['async'] = true;
+        }
+        if ($script->hasAttribute('defer')) {
+            $attributes['defer'] = true;
+        }
+        if ($script->hasAttribute('type')) {
+            $type = trim($script->getAttribute('type'));
+            if ($type !== '') {
+                $attributes['type'] = $type;
+            }
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Extract script attributes from script tag.
+     *
+     * @param string $scriptTag
+     *
+     * @return array
+     */
+    protected static function getScriptAttributesFromTag($scriptTag)
+    {
+        $attributes = [];
+        if (!preg_match('/<\s*script\b([^>]*)>/i', $scriptTag, $matches)) {
+            return $attributes;
+        }
+
+        $attrString = $matches[1];
+        if (preg_match('/\basync\b/i', $attrString)) {
+            $attributes['async'] = true;
+        }
+        if (preg_match('/\bdefer\b/i', $attrString)) {
+            $attributes['defer'] = true;
+        }
+        if (preg_match('/\btype\s*=\s*(["\']?)([^\s"\'>]+)\1/i', $attrString, $typeMatch)) {
+            $type = trim($typeMatch[2]);
+            if ($type !== '') {
+                $attributes['type'] = $type;
+            }
+        }
+
+        return $attributes;
+    }
+
+    /**
+     * Format script attributes for output.
+     *
+     * @param array $attributes
+     *
+     * @return string
+     */
+    protected static function formatScriptAttributes(array $attributes)
+    {
+        $parts = [];
+        if (!empty($attributes['async'])) {
+            $parts[] = 'async';
+        }
+        if (!empty($attributes['defer'])) {
+            $parts[] = 'defer';
+        }
+        if (!empty($attributes['type'])) {
+            $parts[] = 'type="'.htmlspecialchars($attributes['type'], ENT_QUOTES, 'UTF-8').'"';
+        }
+
+        if (!$parts) {
+            return '';
+        }
+
+        return ' '.implode(' ', $parts);
     }
 
     /**

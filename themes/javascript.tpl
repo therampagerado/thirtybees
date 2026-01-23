@@ -51,13 +51,23 @@ var {$k} = '{$def|@addcslashes:'\''}';
 {/if}
 {if isset($js_files) && $js_files|@count}
 {foreach from=$js_files key=k item=js_uri}
-<script src="{$js_uri}"></script>
+{assign var=js_attributes value=''}
+{if isset($js_files_attributes[$js_uri])}
+{assign var=js_attributes value=$js_files_attributes[$js_uri]}
+{/if}
+<script src="{$js_uri}"{$js_attributes}></script>
 {/foreach}
 {/if}
 {if isset($js_inline) && $js_inline|@count}
-<script>
 {foreach from=$js_inline key=k item=inline}
-{$inline}
-{/foreach}
+{if is_array($inline)}
+<script{$inline.attributes|default:''}>
+{$inline.content}
 </script>
+{else}
+<script>
+{$inline}
+</script>
+{/if}
+{/foreach}
 {/if}
