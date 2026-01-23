@@ -108,6 +108,11 @@ class MediaCore
     protected static $inline_script_src = [];
 
     /**
+     * @var array list of javascript attributes for external scripts
+     */
+    protected static $deferred_script_attributes = [];
+
+    /**
      * @var string used for preg_replace_callback parameter (avoid global)
      */
     protected static $current_css_file;
@@ -985,6 +990,10 @@ class MediaCore
                             }
                         }
                     }
+                    $attributeString = Media::buildScriptAttributeString($script);
+                    if ($attributeString) {
+                        Media::$deferred_script_attributes[$src] = $attributeString;
+                    }
                     if (!in_array($src, Media::$inline_script_src) && !$script->getAttribute(Media::$pattern_keepinline)) {
                         Context::getContext()->controller->addJS($src);
                     }
@@ -994,6 +1003,43 @@ class MediaCore
         $output = preg_replace_callback(Media::$pattern_js, ['Media', 'deferScript'], $output);
 
         return $output;
+    }
+
+    /**
+     * @return array
+     */
+    public static function getDeferredScriptAttributes()
+    {
+        return Media::$deferred_script_attributes;
+    }
+
+    /**
+     * @param DOMElement $script
+     *
+     * @return string|null
+     */
+    protected static function buildScriptAttributeString(DOMElement $script)
+    {
+        $attributes = [];
+        if ($script->hasAttributes()) {
+            foreach ($script->attributes as $attribute) {
+                if ($attribute->name === 'src') {
+                    continue;
+                }
+                $value = trim($attribute->value);
+                if ($value === '' || $value === $attribute->name) {
+                    $attributes[] = $attribute->name;
+                } else {
+                    $attributes[] = $attribute->name.'="'.htmlspecialchars($value, ENT_QUOTES, 'UTF-8').'"';
+                }
+            }
+        }
+
+        if (!$attributes) {
+            return null;
+        }
+
+        return ' '.implode(' ', $attributes);
     }
 
     /**

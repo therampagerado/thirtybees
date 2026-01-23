@@ -671,6 +671,7 @@ class FrontControllerCore extends Controller
                 [
                     'js_def' => Media::getJsDef(),
                     'js_files' => $defer ? array_unique($this->js_files) : [],
+                    'js_files_attributes' => $defer ? Media::getDeferredScriptAttributes() : [],
                     'js_inline' => ($defer && $domAvailable) ? Media::getInlineScript() : [],
                 ]
             );
