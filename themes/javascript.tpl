@@ -54,6 +54,11 @@ var {$k} = '{$def|@addcslashes:'\''}';
 <script src="{$js_uri}"></script>
 {/foreach}
 {/if}
+{if isset($js_deferred) && $js_deferred|@count}
+{foreach from=$js_deferred key=k item=js_tag}
+{$js_tag}
+{/foreach}
+{/if}
 {if isset($js_inline) && $js_inline|@count}
 <script>
 {foreach from=$js_inline key=k item=inline}

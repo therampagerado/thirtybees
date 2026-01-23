@@ -108,6 +108,11 @@ class MediaCore
     protected static $inline_script_src = [];
 
     /**
+     * @var array list of deferred script tags with attributes preserved
+     */
+    protected static $deferred_script_tags = [];
+
+    /**
      * @var string used for preg_replace_callback parameter (avoid global)
      */
     protected static $current_css_file;
@@ -898,6 +903,16 @@ class MediaCore
     }
 
     /**
+     * Get deferred script tags with attributes preserved.
+     *
+     * @return array deferred script tags
+     */
+    public static function getDeferredScriptTags()
+    {
+        return Media::$deferred_script_tags;
+    }
+
+    /**
      * Add a new javascript definition at bottom of page
      *
      * @param string|int|bool|float|array $jsDef
@@ -985,7 +1000,12 @@ class MediaCore
                             }
                         }
                     }
-                    if (!in_array($src, Media::$inline_script_src) && !$script->getAttribute(Media::$pattern_keepinline)) {
+                    $keepInline = $script->getAttribute(Media::$pattern_keepinline);
+                    $preserveAttributes = $script->hasAttribute('async')
+                        || $script->hasAttribute('defer')
+                        || (strtolower($script->getAttribute('type')) === 'module');
+
+                    if (!$preserveAttributes && !in_array($src, Media::$inline_script_src) && !$keepInline) {
                         Context::getContext()->controller->addJS($src);
                     }
                 }
@@ -1019,6 +1039,16 @@ class MediaCore
 
         if (isset($matches[2])) {
             $inline = trim($matches[2]);
+        }
+
+        $keepInline = preg_match('/'.Media::$pattern_keepinline.'/', $original);
+        $preserveAttributes = preg_match('/\basync(\s|=|>)/i', $original)
+            || preg_match('/\bdefer(\s|=|>)/i', $original)
+            || preg_match('/\btype\s*=\s*(["\']?)module\\1/i', $original);
+
+        if ($preserveAttributes && !$keepInline) {
+            Media::$deferred_script_tags[] = $original;
+            return '';
         }
 
         /* This is an inline script, add its content to inline scripts stack then remove it from content */

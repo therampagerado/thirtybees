@@ -672,6 +672,7 @@ class FrontControllerCore extends Controller
                     'js_def' => Media::getJsDef(),
                     'js_files' => $defer ? array_unique($this->js_files) : [],
                     'js_inline' => ($defer && $domAvailable) ? Media::getInlineScript() : [],
+                    'js_deferred' => ($defer && $domAvailable) ? Media::getDeferredScriptTags() : [],
                 ]
             );
             $javascript = $this->context->smarty->fetch(_PS_ALL_THEMES_DIR_ . 'javascript.tpl');
