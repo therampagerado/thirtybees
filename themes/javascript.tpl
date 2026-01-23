@@ -51,7 +51,7 @@ var {$k} = '{$def|@addcslashes:'\''}';
 {/if}
 {if isset($js_files) && $js_files|@count}
 {foreach from=$js_files key=k item=js_uri}
-<script src="{$js_uri}"></script>
+<script src="{$js_uri}"{if isset($js_files_attrs) && isset($js_files_attrs[$js_uri])}{foreach from=$js_files_attrs[$js_uri] key=attr item=attrValue}{if is_bool($attrValue)} {$attr}{elseif $attrValue ne ''} {$attr}="{$attrValue|escape:'htmlall':'UTF-8'}"{/if}{/foreach}{/if}></script>
 {/foreach}
 {/if}
 {if isset($js_inline) && $js_inline|@count}

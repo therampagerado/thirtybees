@@ -108,6 +108,11 @@ class MediaCore
     protected static $inline_script_src = [];
 
     /**
+     * @var array list of deferred script attributes keyed by script src
+     */
+    protected static $deferred_script_attributes = [];
+
+    /**
      * @var string used for preg_replace_callback parameter (avoid global)
      */
     protected static $current_css_file;
@@ -898,6 +903,16 @@ class MediaCore
     }
 
     /**
+     * Get deferred script attributes keyed by script src
+     *
+     * @return array
+     */
+    public static function getDeferredScriptAttributes()
+    {
+        return Media::$deferred_script_attributes;
+    }
+
+    /**
      * Add a new javascript definition at bottom of page
      *
      * @param string|int|bool|float|array $jsDef
@@ -986,6 +1001,28 @@ class MediaCore
                         }
                     }
                     if (!in_array($src, Media::$inline_script_src) && !$script->getAttribute(Media::$pattern_keepinline)) {
+                        $attributes = [];
+                        if ($script->hasAttribute('async')) {
+                            $attributes['async'] = true;
+                        }
+                        if ($script->hasAttribute('defer')) {
+                            $attributes['defer'] = true;
+                        }
+                        if ($script->hasAttribute('type')) {
+                            $type = trim($script->getAttribute('type'));
+                            if ($type !== '') {
+                                $attributes['type'] = $type;
+                            }
+                        }
+                        if (!empty($attributes)) {
+                            if (!isset(Media::$deferred_script_attributes[$src])) {
+                                Media::$deferred_script_attributes[$src] = [];
+                            }
+                            Media::$deferred_script_attributes[$src] = array_merge(
+                                Media::$deferred_script_attributes[$src],
+                                $attributes
+                            );
+                        }
                         Context::getContext()->controller->addJS($src);
                     }
                 }
