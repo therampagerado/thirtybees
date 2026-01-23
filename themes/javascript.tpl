@@ -52,7 +52,7 @@ var {$k} = '{$def|@addcslashes:'\''}';
 {if isset($js_files) && $js_files|@count}
 {foreach from=$js_files key=k item=js_uri}
 {if is_array($js_uri)}
-<script src="{$js_uri.src}"{if !empty($js_uri.attrs)}{$js_uri.attrs}{/if}></script>
+<script{if !empty($js_uri.attrs)}{$js_uri.attrs}{/if} src="{$js_uri.src}"></script>
 {else}
 <script src="{$js_uri}"></script>
 {/if}
