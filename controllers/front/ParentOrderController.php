@@ -115,7 +115,7 @@ class ParentOrderControllerCore extends FrontController
                 $context->cart = $duplication['cart'];
                 CartRule::autoAddToCart($context);
                 if (!empty($duplication['unavailable_products'])) {
-                    $this->context->cookie->reorder_unavailable_products = json_encode(array_values($duplication['unavailable_products']));
+                    $this->context->cookie->reorder_unavailable_products = implode('|', $duplication['unavailable_products']);
                 }
                 $this->context->cookie->write();
                 if (Configuration::get('PS_ORDER_PROCESS_TYPE') == 1) {
@@ -126,14 +126,9 @@ class ParentOrderControllerCore extends FrontController
         }
 
         if (!empty($this->context->cookie->reorder_unavailable_products)) {
-            $unavailableProducts = json_decode((string) $this->context->cookie->reorder_unavailable_products, true);
+            $unavailableProducts = array_filter(array_unique(explode('|', (string) $this->context->cookie->reorder_unavailable_products)));
             unset($this->context->cookie->reorder_unavailable_products);
 
-            if (!is_array($unavailableProducts)) {
-                $unavailableProducts = [];
-            }
-
-            $unavailableProducts = array_values(array_filter(array_unique($unavailableProducts)));
             if ($unavailableProducts) {
                 $this->errors[] = sprintf(
                     Tools::displayError('Some items are no longer available and have not been included in your new order: %s'),

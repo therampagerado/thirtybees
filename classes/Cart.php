@@ -4487,10 +4487,6 @@ class CartCore extends ObjectModel
                 }
             }
 
-            if ((int) $product['quantity'] <= 0) {
-                continue;
-            }
-
             $updated = $cart->updateQty(
                 (int) $product['quantity'],
                 (int) $product['id_product'],
@@ -4507,15 +4503,9 @@ class CartCore extends ObjectModel
             } else {
                 $success = false;
                 $name = Product::getProductName((int) $product['id_product'], (int) $product['id_product_attribute']);
-                if (!$name) {
-                    $name = sprintf(
-                        'Product #%d%s',
-                        (int) $product['id_product'],
-                        (int) $product['id_product_attribute'] ? '/'.(int) $product['id_product_attribute'] : ''
-                    );
+                if ($name) {
+                    $unavailableProducts[$name] = $name;
                 }
-
-                $unavailableProducts[$name] = $name;
             }
         }
 
