@@ -68,7 +68,7 @@ class PasswordControllerCore extends FrontController
                 } elseif ((strtotime($customer->last_passwd_gen.'+'.($minTime = (int) Configuration::get('PS_PASSWD_TIME_FRONT')).' minutes') - time()) > 0) {
                     $this->errors[] = sprintf(Tools::displayError('You can regenerate your password only every %d minute(s)'), (int) $minTime);
                 } else {
-                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->secure_key.'&id_customer='.(int) $customer->id);
+                    $url = $this->context->link->getPageLink('password', true, null, 'token='.$customer->secure_key.'&email='.urlencode($customer->email));
                     $mailParams = [
                         '{email}'     => $customer->email,
                         '{lastname}'  => $customer->lastname,
@@ -181,18 +181,31 @@ class PasswordControllerCore extends FrontController
     protected static function resolveCustomer()
     {
         $token = Tools::getValue('token');
+        $email = Tools::getValue('email');
         $idCustomer = Tools::getIntValue('id_customer');
-        if ($token && $idCustomer) {
-            $email = Db::readOnly()->getValue(
-                (new DbQuery())
-                    ->select('c.`email`')
-                    ->from('customer', 'c')
-                    ->where('c.`secure_key` = \''.pSQL($token).'\'')
-                    ->where('c.`id_customer` = '.(int) $idCustomer)
-            );
+
+        // Support both new email-based and legacy id_customer-based reset URLs
+        if ($token && ($email || $idCustomer)) {
             if ($email) {
+                $resolvedEmail = Db::readOnly()->getValue(
+                    (new DbQuery())
+                        ->select('c.`email`')
+                        ->from('customer', 'c')
+                        ->where('c.`secure_key` = \''.pSQL($token).'\'')
+                        ->where('c.`email` = \''.pSQL($email).'\'')
+                );
+            } else {
+                $resolvedEmail = Db::readOnly()->getValue(
+                    (new DbQuery())
+                        ->select('c.`email`')
+                        ->from('customer', 'c')
+                        ->where('c.`secure_key` = \''.pSQL($token).'\'')
+                        ->where('c.`id_customer` = '.(int) $idCustomer)
+                );
+            }
+            if ($resolvedEmail) {
                 $customer = new Customer();
-                $customer->getByemail($email);
+                $customer->getByemail($resolvedEmail);
                 if (!Validate::isLoadedObject($customer)) {
                     throw new PrestaShopException(Tools::displayError('Customer account not found'));
                 }
@@ -204,7 +217,7 @@ class PasswordControllerCore extends FrontController
                 throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
             }
         }
-        if ($token || $idCustomer) {
+        if ($token || $idCustomer || ($token && $email)) {
             throw new PrestaShopException(Tools::displayError('We cannot regenerate your password with the data you\'ve submitted.'));
         }
         return false;

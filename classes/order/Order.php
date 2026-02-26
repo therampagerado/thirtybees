@@ -2737,16 +2737,24 @@ class OrderCore extends ObjectModel
     public function getUniqReference()
     {
         $query = new DbQuery();
-        $query->select('MIN(id_order) as min, MAX(id_order) as max');
+        $query->select('COUNT(*) as cnt');
         $query->from('orders');
         $query->where('id_cart = '.(int) $this->id_cart);
 
-        $order = Db::readOnly()->getRow($query);
+        $count = (int) Db::readOnly()->getValue($query);
 
-        if ($order['min'] == $order['max']) {
+        if ($count <= 1) {
             return $this->reference;
         } else {
-            return $this->reference.'#'.($this->id + 1 - $order['min']);
+            // Use position within the cart's orders rather than exposing sequential order IDs
+            $position = (int) Db::readOnly()->getValue(
+                (new DbQuery())
+                    ->select('COUNT(*)')
+                    ->from('orders')
+                    ->where('id_cart = '.(int) $this->id_cart)
+                    ->where('id_order <= '.(int) $this->id)
+            );
+            return $this->reference.'#'.$position;
         }
     }
 

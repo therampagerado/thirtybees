@@ -69,8 +69,8 @@ class OrderDetailControllerCore extends FrontController
      */
     public function postProcess()
     {
-        if (Tools::isSubmit('msgText') && Tools::isSubmit('id_order') && Tools::isSubmit('id_product')) {
-            $idOrder = Tools::getIntValue('id_order');
+        if (Tools::isSubmit('msgText') && (Tools::isSubmit('id_order') || Tools::isSubmit('order_reference')) && Tools::isSubmit('id_product')) {
+            $idOrder = $this->resolveOrderId();
             $msgText = Tools::getValue('msgText');
 
             if (!$idOrder || !Validate::isUnsignedId($idOrder)) {
@@ -153,7 +153,7 @@ class OrderDetailControllerCore extends FrontController
 
 
                     if (Tools::getValue('ajax') != 'true') {
-                        Tools::redirect('index.php?controller=order-detail&id_order='.(int) $idOrder);
+                        Tools::redirect('index.php?controller=order-detail&order_reference='.urlencode($order->reference));
                     }
 
                     $this->context->smarty->assign('message_confirmation', true);
@@ -189,8 +189,9 @@ class OrderDetailControllerCore extends FrontController
     {
         parent::initContent();
 
-        if (!($idOrder = Tools::getIntValue('id_order')) || !Validate::isUnsignedId($idOrder)) {
-            $this->errors[] = Tools::displayError('Order ID required');
+        $idOrder = $this->resolveOrderId();
+        if (!$idOrder || !Validate::isUnsignedId($idOrder)) {
+            $this->errors[] = Tools::displayError('Order not found');
         } else {
             $order = new Order($idOrder);
             if (Validate::isLoadedObject($order) && $order->id_customer == $this->context->customer->id) {
@@ -285,6 +286,53 @@ class OrderDetailControllerCore extends FrontController
             $this->addCSS(_THEME_CSS_DIR_.'history.css');
             $this->addCSS(_THEME_CSS_DIR_.'addresses.css');
         }
+    }
+
+    /**
+     * Resolves order ID from request parameters.
+     * Accepts order_reference, or id_order as either a numeric ID or an order reference string.
+     *
+     * @return int
+     * @throws PrestaShopException
+     */
+    protected function resolveOrderId()
+    {
+        // First try the explicit order_reference parameter
+        $reference = Tools::getValue('order_reference');
+        if ($reference) {
+            return $this->resolveOrderIdByReference($reference);
+        }
+
+        // Try id_order parameter - may be numeric (legacy) or reference string
+        $idOrder = Tools::getValue('id_order');
+        if ($idOrder) {
+            if (is_numeric($idOrder)) {
+                return (int)$idOrder;
+            }
+            // id_order contains a reference string
+            return $this->resolveOrderIdByReference($idOrder);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Resolves order ID from an order reference string, verifying customer ownership.
+     *
+     * @param string $reference
+     * @return int
+     * @throws PrestaShopException
+     */
+    protected function resolveOrderIdByReference($reference)
+    {
+        $orders = Order::getByReference($reference)->getResults();
+        if ($orders) {
+            $order = $orders[0];
+            if (Validate::isLoadedObject($order) && (int)$order->id_customer === (int)$this->context->customer->id) {
+                return (int)$order->id;
+            }
+        }
+        return 0;
     }
 
     /**

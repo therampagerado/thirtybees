@@ -140,7 +140,6 @@ class OrderOpcControllerCore extends ParentOrderController
                             $return = [
                                 'hasError'    => !empty($this->errors),
                                 'errors'      => $this->errors,
-                                'id_customer' => (int) $this->context->customer->id,
                                 'token'       => Tools::getToken(false),
                             ];
                             if (!count($this->errors)) {

@@ -145,7 +145,6 @@ class OrderConfirmationControllerCore extends FrontController
                 'total_discounts_tax_excl' => $order->total_discounts_tax_excl,
                 'total_paid_tax_incl'      => $order->total_paid_tax_incl,
                 'total_paid_tax_excl'      => $order->total_paid_tax_excl,
-                'id_customer'              => $this->context->customer->id,
             ]
         );
 
@@ -161,9 +160,8 @@ class OrderConfirmationControllerCore extends FrontController
         if ($this->context->customer->is_guest) {
             $this->context->smarty->assign(
                 [
-                    'id_order'           => $this->id_order,
                     'reference_order'    => $this->reference,
-                    'id_order_formatted' => sprintf('#%06d', $this->id_order),
+                    'id_order_formatted' => $this->reference,
                     'email'              => $this->context->customer->email,
                 ]
             );

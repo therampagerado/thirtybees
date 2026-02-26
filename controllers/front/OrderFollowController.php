@@ -56,7 +56,7 @@ class OrderFollowControllerCore extends FrontController
             $orderQteInput = Tools::getValue('order_qte_input');
             $customizationIds = Tools::getValue('customization_ids');
 
-            if (!$idOrder = Tools::getIntValue('id_order')) {
+            if (!$idOrder = $this->resolveReturnOrderId()) {
                 Tools::redirect('index.php?controller=history');
             }
             if (!$orderQteInput && !$customizationQtyInput && !$customizationIds) {
@@ -83,12 +83,13 @@ class OrderFollowControllerCore extends FrontController
             $orderReturn->id_order = $idOrder;
             $orderReturn->question = htmlspecialchars(Tools::getValue('returnText'));
             if (empty($orderReturn->question)) {
+                $order = new Order((int) $idOrder);
                 Tools::redirect(
                     'index.php?controller=order-follow&errorMsg&'.http_build_query(
                         [
                             'ids_order_detail' => $idsOrderDetail,
                             'order_qte_input'  => $orderQteInput,
-                            'id_order'         => $idOrder,
+                            'id_order'         => $order->reference,
                         ]
                     )
                 );
@@ -128,7 +129,7 @@ class OrderFollowControllerCore extends FrontController
                     'errorMsg'         => true,
                     'ids_order_detail' => Tools::getValue('ids_order_detail', []),
                     'order_qte_input'  => Tools::getValue('order_qte_input', []),
-                    'id_order'         => Tools::getIntValue('id_order'),
+                    'id_order'         => Tools::getValue('id_order'),
                 ]
             );
         } elseif (Tools::isSubmit('errorDetail1')) {
@@ -169,5 +170,31 @@ class OrderFollowControllerCore extends FrontController
         );
         $this->addjqueryPlugin('footable');
         $this->addJqueryPlugin('footable-sort');
+    }
+
+    /**
+     * Resolves order ID from id_order parameter.
+     * Accepts either a numeric ID (legacy) or an order reference string.
+     *
+     * @return int
+     * @throws PrestaShopException
+     */
+    protected function resolveReturnOrderId()
+    {
+        $idOrder = Tools::getValue('id_order');
+        if (!$idOrder) {
+            return 0;
+        }
+        if (is_numeric($idOrder)) {
+            return (int)$idOrder;
+        }
+        $orders = Order::getByReference($idOrder)->getResults();
+        if ($orders) {
+            $order = $orders[0];
+            if (Validate::isLoadedObject($order) && (int)$order->id_customer === (int)$this->context->customer->id) {
+                return (int)$order->id;
+            }
+        }
+        return 0;
     }
 }

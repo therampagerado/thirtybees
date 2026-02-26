@@ -103,7 +103,7 @@ class ParentOrderControllerCore extends FrontController
 
         if (Tools::isSubmit('submitReorder')
             && $this->context->customer->isLogged()
-            && $idOrder = Tools::getIntValue('id_order')
+            && $idOrder = $this->resolveReorderOrderId()
         ) {
             $oldCart = new Cart(Order::getCartIdStatic($idOrder, $this->context->customer->id));
             $duplication = $oldCart->duplicate();
@@ -762,6 +762,33 @@ class ParentOrderControllerCore extends FrontController
             return $this->context->cart->id_carrier;
         }
 
+        return 0;
+    }
+
+    /**
+     * Resolves order ID for reorder from id_order parameter.
+     * Accepts either a numeric ID (legacy) or an order reference string.
+     *
+     * @return int
+     * @throws PrestaShopException
+     */
+    protected function resolveReorderOrderId()
+    {
+        $idOrder = Tools::getValue('id_order');
+        if (!$idOrder) {
+            return 0;
+        }
+        if (is_numeric($idOrder)) {
+            return (int)$idOrder;
+        }
+        // Treat as order reference
+        $orders = Order::getByReference($idOrder)->getResults();
+        if ($orders) {
+            $order = $orders[0];
+            if (Validate::isLoadedObject($order) && (int)$order->id_customer === (int)$this->context->customer->id) {
+                return (int)$order->id;
+            }
+        }
         return 0;
     }
 }

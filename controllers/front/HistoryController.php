@@ -87,6 +87,8 @@ class HistoryControllerCore extends FrontController
                 if (Validate::isLoadedObject($myOrder)) {
                     $order['virtual'] = $myOrder->isVirtual(false);
                 }
+                // Use order reference instead of sequential id_order in frontend
+                $order['id_order'] = $order['reference'];
             }
         }
         $this->context->smarty->assign(
