@@ -341,6 +341,14 @@ class CurrencyCore extends ObjectModel
                 foreach ($rates as $isoCode => $rate) {
                     $currency = Currency::getCurrencyInstance(Currency::getIdByIsoCode($isoCode));
                     if (Validate::isLoadedObject($currency)) {
+                        // Only update shops where the currency is already associated,
+                        // to prevent creating unwanted shop associations in multistore
+                        $associatedShops = $currency->getAssociatedShops();
+                        $contextShops = Shop::getContextListShopID();
+                        $currency->id_shop_list = array_intersect($associatedShops, $contextShops);
+                        if (empty($currency->id_shop_list)) {
+                            continue;
+                        }
                         $currency->conversion_rate = (float)$rate;
                         $currency->save();
                     }
