@@ -1592,7 +1592,7 @@
 				<div class="form-group">
 					<label class="control-label col-lg-3">{l s='Payment'}</label>
 					<div class="col-lg-9">
-						<select name="payment_module_name" id="payment_module_name">
+						<select name="payment_module_name" id="payment_module_name" class="form-control">
 							{if !$PS_CATALOG_MODE}
 							{foreach from=$payment_modules item='module'}
 								<option value="{$module->name}" {if isset($smarty.post.payment_module_name) && $module->name == $smarty.post.payment_module_name}selected="selected"{/if}>{$module->displayName}</option>
@@ -1606,7 +1606,7 @@
 				<div class="form-group">
 					<label class="control-label col-lg-3">{l s='Order status'}</label>
 					<div class="col-lg-9">
-						<select name="id_order_state" id="id_order_state">
+						<select name="id_order_state" id="id_order_state" class="form-control">
 							{foreach from=$order_states item='order_state'}
 								<option value="{$order_state.id_order_state}" {if isset($smarty.post.id_order_state) && $order_state.id_order_state == $smarty.post.id_order_state}selected="selected"{/if}>{$order_state.name}</option>
 							{/foreach}
