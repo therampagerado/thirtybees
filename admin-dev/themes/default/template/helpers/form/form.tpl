@@ -829,9 +829,10 @@
 				var tempClass = 'autoload_rte' + Math.floor(Math.random() * 99999999).toString().padStart(8, '0');
 				$(elem).addClass(tempClass);
 				if (typeof window.IntersectionObserver !== 'undefined') {
-					var observer = new IntersectionObserver(function (changes) {
+					var observer = new IntersectionObserver(function (changes, obs) {
 						changes.forEach(function (change) {
 							if (change.intersectionRatio > 0) {
+								obs.disconnect();
 								tinySetup({
 									editor_selector: tempClass,
 								});

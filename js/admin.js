@@ -222,6 +222,22 @@ function toggleLanguageFlags(elt) {
   $(elt).parents('.displayed_flag').siblings('.language_flags').toggle();
 }
 
+function refreshTinyMCEEditors() {
+  if (typeof tinyMCE === 'undefined' || !tinyMCE.editors || !tinyMCE.editors.length) {
+    return;
+  }
+  setTimeout(function () {
+    for (var i = 0; i < tinyMCE.editors.length; i++) {
+      var editor = tinyMCE.editors[i];
+      try {
+        if (editor.initialized && $(editor.getContainer()).is(':visible')) {
+          editor.execCommand('mceAutoResize');
+        }
+      } catch (e) {}
+    }
+  }, 0);
+}
+
 // Kept for retrocompatibility only (out of AdminProducts & AdminCategories)
 function changeLanguage(field, fieldsString, id_language_new, iso_code) {
   $('div[id^=' + field + '_]').hide();
@@ -249,6 +265,7 @@ function changeFormLanguage(id_language_new, iso_code, employee_cookie) {
   id_language = id_language_new;
   changeEmployeeLanguage();
   updateCurrentText();
+  refreshTinyMCEEditors();
 }
 
 function displayFlags(languages, defaultLanguageID, employee_cookie) {
@@ -1075,6 +1092,7 @@ function hideOtherLanguage(id) {
   }
 
   updateCurrentText();
+  refreshTinyMCEEditors();
 }
 
 function updateAllLanguageFields(element) {
