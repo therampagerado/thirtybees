@@ -45,6 +45,7 @@
   var priceDisplayPrecision = 0; {* Set in displaySummary(). *}
   var priceDatabasePrecision = {$smarty.const._TB_PRICE_DATABASE_PRECISION_};
   var request = null;
+	var txt_missing_customer_before_create = '{l s='You must select or create a customer before creating the order.' js=1}';
 
 	{foreach from=$defaults_order_state key='module' item='id_order_state'}
 		defaults_order_state['{$module}'] = '{$id_order_state}';
@@ -249,6 +250,14 @@
 			return false;
 		});
 
+		$('form:has(button[name="submitAddOrder"])').on('submit', function(e){
+			if (parseInt(id_customer, 10) <= 0) {
+				e.preventDefault();
+				showMissingCustomerError();
+				return false;
+			}
+		});
+
 		$('#products_found').hide();
 		$('#carts').hide();
 
@@ -281,6 +290,13 @@
 			$(this).blur();
 		});
 	});
+
+	function showMissingCustomerError()
+	{
+		$('#missing_customer_error').remove();
+		$('<div id="missing_customer_error" class="alert alert-danger"><button type="button" class="close" data-dismiss="alert">&times;</button>'+txt_missing_customer_before_create+'</div>').insertBefore($('.panel').first());
+		$('html, body').animate({scrollTop: 0}, 200);
+	}
 
 	function resetBind()
 	{
@@ -527,6 +543,7 @@
 
 	function setupCustomer(idCustomer)
 	{
+		$('#missing_customer_error').remove();
 		$('#carts').show();
 		$('#products_part').show();
 		$('#vouchers_part').show();

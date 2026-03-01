@@ -1343,8 +1343,6 @@ class AdminOrdersControllerCore extends AdminController
                 $cart = new Cart((int) $idCart);
                 if (!(int) $cart->id_customer) {
                     $this->errors[] = Tools::displayError('You must select a customer before creating the order.');
-                    $this->display = 'add';
-                    $_GET['addorder'] = true;
                 } else {
                     $this->context->currency = new Currency((int) $cart->id_currency);
                     $this->context->customer = new Customer((int) $cart->id_customer);
