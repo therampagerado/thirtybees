@@ -278,9 +278,6 @@ class AdminOrdersControllerCore extends AdminController
         if ($idCart && !Validate::isLoadedObject($cart)) {
             $this->errors[] = $this->l('This cart does not exists');
         }
-        if ($idCart && Validate::isLoadedObject($cart) && !$cart->id_customer) {
-            $this->errors[] = $this->l('The cart must have a customer');
-        }
         if (count($this->errors)) {
             return;
         }
@@ -1344,6 +1341,10 @@ class AdminOrdersControllerCore extends AdminController
                 $paymentModule = $this->getPaymentModule();
 
                 $cart = new Cart((int) $idCart);
+                if (!(int) $cart->id_customer) {
+                    $this->errors[] = Tools::displayError('You must select a customer before creating the order.');
+                    return;
+                }
                 $this->context->currency = new Currency((int) $cart->id_currency);
                 $this->context->customer = new Customer((int) $cart->id_customer);
 
