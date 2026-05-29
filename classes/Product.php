@@ -780,6 +780,38 @@ class ProductCore extends ObjectModel implements InitializationCallback
     }
 
     /**
+     * @return bool
+     *
+     * @throws PrestaShopException
+     */
+    protected static function isVatNumberModuleEnabled()
+    {
+        static $vatNumberModuleEnabled = null;
+
+        if ($vatNumberModuleEnabled === null) {
+            $vatNumberModuleEnabled = Module::isEnabled('vatnumber');
+        }
+
+        return $vatNumberModuleEnabled;
+    }
+
+    /**
+     * @return bool
+     *
+     * @throws PrestaShopException
+     */
+    protected static function isBlockLayeredModuleEnabled()
+    {
+        static $blockLayeredModuleEnabled = null;
+
+        if ($blockLayeredModuleEnabled === null) {
+            $blockLayeredModuleEnabled = Module::isEnabled('blocklayered');
+        }
+
+        return $blockLayeredModuleEnabled;
+    }
+
+    /**
      * Returns tax rate.
      *
      * @param Address|null $address
@@ -960,7 +992,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
         }
 
         // @TODO: Use a hook for this
-        if (Module::isEnabled('vatnumber') && $idAddress) {
+        if (static::isVatNumberModuleEnabled() && $idAddress) {
             require_once _PS_MODULE_DIR_.'/vatnumber/VATNumberTaxManager.php';
 
             $address = new Address($idAddress);
@@ -1502,7 +1534,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
             }
 
             // @TODO: Use a hook for this
-            if (Module::isEnabled('vatnumber')
+            if (static::isVatNumberModuleEnabled()
                 && static::$_taxCalculationMethod != PS_TAX_EXC) {
                 require_once _PS_MODULE_DIR_.'/vatnumber/VATNumberTaxManager.php';
 
@@ -3770,7 +3802,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
     {
         // if blocklayered module is installed we check if user has set custom attribute name
         $conn = Db::readOnly();
-        if (Module::isInstalled('blocklayered') && Module::isEnabled('blocklayered')) {
+        if (static::isBlockLayeredModuleEnabled()) {
             $nbCustomValues = $conn->getArray(
                 '
 			SELECT DISTINCT la.`id_attribute`, la.`url_name` AS `attribute`
@@ -7679,7 +7711,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
 
         // if blocklayered module is installed we check if user has set custom attribute name
         $conn = Db::readOnly();
-        if (Module::isInstalled('blocklayered') && Module::isEnabled('blocklayered')) {
+        if (static::isBlockLayeredModuleEnabled()) {
             $nbCustomValues = $conn->getArray(
                 '
 			SELECT DISTINCT la.`id_attribute`, la.`url_name` AS `name`
