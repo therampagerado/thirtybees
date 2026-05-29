@@ -545,14 +545,17 @@ class ProductControllerCore extends FrontController
         $idProduct = (int) $this->product->id;
         $idShop = $this->context->shop->id;
         $decimals = $currency->getDisplayPrecision();
+        $taxAddressType = Configuration::get('PS_TAX_ADDRESS_TYPE');
+        $idTaxAddress = (int) $this->context->cart->{$taxAddressType};
+        $taxAddress = new Address($idTaxAddress);
 
         // Tax
-        $tax = (float) $this->product->getTaxesRate(new Address((int) $this->context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')}));
+        $tax = (float) $this->product->getTaxesRate($taxAddress);
         $this->context->smarty->assign('tax_rate', $tax);
 
         $productPriceWithoutEcoTax = $this->product->getPrice() - $this->product->ecotax;
 
-        $ecotaxRate = (float) Tax::getProductEcotaxRate($this->context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
+        $ecotaxRate = (float) Tax::getProductEcotaxRate($idTaxAddress);
         if (Product::$_taxCalculationMethod == PS_TAX_INC && (int) Configuration::get('PS_TAX')) {
             $ecotaxTaxAmount = Tools::ps_round($this->product->ecotax * (1 + $ecotaxRate / 100), $decimals);
         } else {
@@ -577,7 +580,6 @@ class ProductControllerCore extends FrontController
             }
         }
 
-        $address = new Address($this->context->cart->{Configuration::get('PS_TAX_ADDRESS_TYPE')});
         $this->context->smarty->assign(
             [
                 'quantity_discounts'         => $this->formatQuantityDiscounts($quantityDiscounts, null, (float) $tax, $ecotaxTaxAmount),
@@ -586,7 +588,7 @@ class ProductControllerCore extends FrontController
                 'ecotaxTax_rate'             => $ecotaxRate,
                 'productPriceWithoutEcoTax'  => $productPriceWithoutEcoTax,
                 'group_reduction'            => $groupReduction,
-                'no_tax'                     => Tax::excludeTaxeOption() || !$this->product->getTaxesRate($address),
+                'no_tax'                     => Tax::excludeTaxeOption() || !$this->product->getTaxesRate($taxAddress),
                 'ecotax'                     => (!count($this->errors) && $this->product->ecotax > 0 ? Tools::convertPrice((float) $this->product->ecotax) : 0),
                 'tax_enabled'                => Configuration::get('PS_TAX') && !Configuration::get('AEUC_LABEL_TAX_INC_EXC'),
                 'customer_group_without_tax' => Group::getPriceDisplayMethod($this->context->customer->id_default_group),
