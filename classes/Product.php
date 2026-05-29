@@ -1989,17 +1989,18 @@ class ProductCore extends ObjectModel implements InitializationCallback
         }
 
         $idProductAttribute = $row['id_product_attribute'] = (!empty($row['id_product_attribute']) ? (int) $row['id_product_attribute'] : null);
+        $combinationFeatureActive = Combination::isFeatureActive();
 
         // Product::getDefaultAttribute is only called if id_product_attribute is missing from the SQL query at the origin of it:
         // consider adding it in order to avoid unnecessary queries
         $row['allow_oosp'] = static::isAvailableWhenOutOfStock($row['out_of_stock']);
-        if (Combination::isFeatureActive() && $idProductAttribute === null
+        if ($combinationFeatureActive && $idProductAttribute === null
             && ((isset($row['cache_default_attribute']) && ($ipaDefault = $row['cache_default_attribute']) !== null)
                 || ($ipaDefault = static::getDefaultAttribute($row['id_product'], !$row['allow_oosp'])))
         ) {
             $idProductAttribute = $row['id_product_attribute'] = $ipaDefault;
         }
-        if (!Combination::isFeatureActive() || !isset($row['id_product_attribute'])) {
+        if (!$combinationFeatureActive || !isset($row['id_product_attribute'])) {
             $idProductAttribute = $row['id_product_attribute'] = 0;
         }
 
