@@ -1770,6 +1770,10 @@ class ProductCore extends ObjectModel implements InitializationCallback
             throw new PrestaShopException(sprintf(Tools::displayError('Invalid ordering parameters: orderBy=[%s] orderWay=[%s]'), $orderBy, $orderWay));
         }
 
+        $newProductDays = Configuration::get('PS_NB_DAYS_NEW_PRODUCT');
+        $newProductDays = $newProductDays ? (int) $newProductDays : 20;
+        $newProductDate = date('Y-m-d', strtotime('-'.$newProductDays.' DAY'));
+
         $sqlGroups = '';
         if (Group::isFeatureActive()) {
             $groups = FrontController::getCurrentCustomerGroups();
@@ -1790,7 +1794,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
 					FROM `'._DB_PREFIX_.'product` p
 					'.Shop::addSqlAssociation('product', 'p').'
 					WHERE product_shop.`active` = 1
-					AND product_shop.`date_add` > "'.date('Y-m-d', strtotime('-'.(Configuration::get('PS_NB_DAYS_NEW_PRODUCT') ? (int) Configuration::get('PS_NB_DAYS_NEW_PRODUCT') : 20).' DAY')).'"
+					AND product_shop.`date_add` > "'.$newProductDate.'"
 					'.($front ? ' AND product_shop.`visibility` IN ("both", "catalog")' : '').'
 					'.$sqlGroups;
 
@@ -1801,7 +1805,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
         $sql->select(
             'p.*, product_shop.*, stock.out_of_stock, IFNULL(stock.quantity, 0) as quantity, pl.`description`, pl.`description_short`, pl.`link_rewrite`, pl.`meta_description`,
 			pl.`meta_keywords`, pl.`meta_title`, pl.`name`, pl.`available_now`, pl.`available_later`, image_shop.`id_image` id_image, il.`legend`, m.`name` AS manufacturer_name,
-			product_shop.`date_add` > "'.date('Y-m-d', strtotime('-'.(Configuration::get('PS_NB_DAYS_NEW_PRODUCT') ? (int) Configuration::get('PS_NB_DAYS_NEW_PRODUCT') : 20).' DAY')).'" as new'
+			product_shop.`date_add` > "'.$newProductDate.'" as new'
         );
 
         $sql->from('product', 'p');
@@ -1820,7 +1824,7 @@ class ProductCore extends ObjectModel implements InitializationCallback
         if ($front) {
             $sql->where('product_shop.`visibility` IN ("both", "catalog")');
         }
-        $sql->where('product_shop.`date_add` > "'.date('Y-m-d', strtotime('-'.(Configuration::get('PS_NB_DAYS_NEW_PRODUCT') ? (int) Configuration::get('PS_NB_DAYS_NEW_PRODUCT') : 20).' DAY')).'"');
+        $sql->where('product_shop.`date_add` > "'.$newProductDate.'"');
         if (Group::isFeatureActive()) {
             $groups = FrontController::getCurrentCustomerGroups();
             $sql->where(
