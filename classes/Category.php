@@ -290,13 +290,15 @@ class CategoryCore extends ObjectModel implements InitializationCallback
         $sqlSort = '',
         $sqlLimit = ''
     ) {
-        if (isset($groups) && Group::isFeatureActive() && !is_array($groups)) {
+        $groupFeatureActive = Group::isFeatureActive();
+        if (isset($groups) && $groupFeatureActive && !is_array($groups)) {
             $groups = (array) $groups;
         }
+        $useGroups = isset($groups) && $groupFeatureActive;
 
         $cacheId = 'Category::getAllCategoriesName_'.md5(
             (int) $rootCategory.(int) $idLang.(int) $active.(int) $useShopRestriction
-            .(isset($groups) && Group::isFeatureActive() ? implode('', $groups) : '')
+            .($useGroups ? implode('', $groups) : '')
         );
 
         if (!Cache::isStored($cacheId)) {
@@ -306,12 +308,12 @@ class CategoryCore extends ObjectModel implements InitializationCallback
 				FROM `'._DB_PREFIX_.'category` c
 				'.($useShopRestriction ? Shop::addSqlAssociation('category', 'c') : '').'
 				LEFT JOIN `'._DB_PREFIX_.'category_lang` cl ON c.`id_category` = cl.`id_category`'.Shop::addSqlRestrictionOnLang('cl').'
-				'.(isset($groups) && Group::isFeatureActive() ? 'LEFT JOIN `'._DB_PREFIX_.'category_group` cg ON c.`id_category` = cg.`id_category`' : '').'
+				'.($useGroups ? 'LEFT JOIN `'._DB_PREFIX_.'category_group` cg ON c.`id_category` = cg.`id_category`' : '').'
 				'.(isset($rootCategory) ? 'RIGHT JOIN `'._DB_PREFIX_.'category` c2 ON c2.`id_category` = '.(int) $rootCategory.' AND c.`nleft` >= c2.`nleft` AND c.`nright` <= c2.`nright`' : '').'
 				WHERE '.($sqlFilter ? $sqlFilter : '1').' '.($idLang ? 'AND `id_lang` = '.(int) $idLang : '').'
 				'.static::getActiveColumnCondition($active, $useShopRestriction).'
-				'.(isset($groups) && Group::isFeatureActive() ? ' AND cg.`id_group` IN ('.implode(',', $groups).')' : '').'
-				'.(!$idLang || (isset($groups) && Group::isFeatureActive()) ? ' GROUP BY c.`id_category`' : '').'
+				'.($useGroups ? ' AND cg.`id_group` IN ('.implode(',', $groups).')' : '').'
+				'.(!$idLang || $useGroups ? ' GROUP BY c.`id_category`' : '').'
 				'.($sqlSort != '' ? $sqlSort : ' ORDER BY c.`level_depth` ASC').'
 				'.($sqlSort == '' && $useShopRestriction ? ', category_shop.`position` ASC' : '').'
 				'.($sqlLimit != '' ? $sqlLimit : '')
@@ -350,13 +352,15 @@ class CategoryCore extends ObjectModel implements InitializationCallback
         $sqlSort = '',
         $sqlLimit = ''
     ) {
-        if (isset($groups) && Group::isFeatureActive() && !is_array($groups)) {
+        $groupFeatureActive = Group::isFeatureActive();
+        if (isset($groups) && $groupFeatureActive && !is_array($groups)) {
             $groups = (array) $groups;
         }
+        $useGroups = isset($groups) && $groupFeatureActive;
 
         $cacheId = 'Category::getNestedCategories_'.md5(
                 (int) $rootCategory.(int) $idLang.(int) $active.(int) $useShopRestriction
-                .(isset($groups) && Group::isFeatureActive() ? implode('', $groups) : '')
+                .($useGroups ? implode('', $groups) : '')
             );
 
         if (!Cache::isStored($cacheId)) {
@@ -366,12 +370,12 @@ class CategoryCore extends ObjectModel implements InitializationCallback
 				FROM `'._DB_PREFIX_.'category` c
 				'.($useShopRestriction ? Shop::addSqlAssociation('category', 'c') : '').'
 				LEFT JOIN `'._DB_PREFIX_.'category_lang` cl ON c.`id_category` = cl.`id_category`'.Shop::addSqlRestrictionOnLang('cl').'
-				'.(isset($groups) && Group::isFeatureActive() ? 'LEFT JOIN `'._DB_PREFIX_.'category_group` cg ON c.`id_category` = cg.`id_category`' : '').'
+				'.($useGroups ? 'LEFT JOIN `'._DB_PREFIX_.'category_group` cg ON c.`id_category` = cg.`id_category`' : '').'
 				'.(isset($rootCategory) ? 'RIGHT JOIN `'._DB_PREFIX_.'category` c2 ON c2.`id_category` = '.(int) $rootCategory.' AND c.`nleft` >= c2.`nleft` AND c.`nright` <= c2.`nright`' : '').'
 				WHERE 1 '.$sqlFilter.' '.($idLang ? 'AND `id_lang` = '.(int) $idLang : '').'
 				'.static::getActiveColumnCondition($active, $useShopRestriction).'
-				'.(isset($groups) && Group::isFeatureActive() ? ' AND cg.`id_group` IN ('.implode(',', $groups).')' : '').'
-				'.(!$idLang || (isset($groups) && Group::isFeatureActive()) ? ' GROUP BY c.`id_category`' : '').'
+				'.($useGroups ? ' AND cg.`id_group` IN ('.implode(',', $groups).')' : '').'
+				'.(!$idLang || $useGroups ? ' GROUP BY c.`id_category`' : '').'
 				'.($sqlSort != '' ? $sqlSort : ' ORDER BY c.`level_depth` ASC').'
 				'.($sqlSort == '' && $useShopRestriction ? ', category_shop.`position` ASC' : '').'
 				'.($sqlLimit != '' ? $sqlLimit : '')
