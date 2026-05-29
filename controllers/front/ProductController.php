@@ -918,10 +918,11 @@ class ProductControllerCore extends FrontController
     protected function assignAttributesCombinations()
     {
         $attributesCombinations = Product::getAttributesInformationsByProduct($this->product->id);
+        $attributeAnchorSeparator = Configuration::get('PS_ATTRIBUTE_ANCHOR_SEPARATOR');
         if (is_array($attributesCombinations) && count($attributesCombinations)) {
             foreach ($attributesCombinations as &$ac) {
                 foreach ($ac as &$val) {
-                    $val = str_replace(Configuration::get('PS_ATTRIBUTE_ANCHOR_SEPARATOR'), '_', Tools::link_rewrite(str_replace([',', '.'], '-', $val)));
+                    $val = str_replace($attributeAnchorSeparator, '_', Tools::link_rewrite(str_replace([',', '.'], '-', $val)));
                 }
             }
         } else {
@@ -930,7 +931,7 @@ class ProductControllerCore extends FrontController
         $this->context->smarty->assign(
             [
                 'attributesCombinations'     => $attributesCombinations,
-                'attribute_anchor_separator' => Configuration::get('PS_ATTRIBUTE_ANCHOR_SEPARATOR'),
+                'attribute_anchor_separator' => $attributeAnchorSeparator,
             ]
         );
     }
