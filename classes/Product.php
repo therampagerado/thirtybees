@@ -5865,30 +5865,15 @@ class ProductCore extends ObjectModel implements InitializationCallback
             return false;
         }
 
-        $conn = Db::readOnly();
-        $productAttributes = $conn->getArray(
-            'SELECT `id_product_attribute`
-			FROM `'._DB_PREFIX_.'product_attribute`
-			WHERE `id_product` = '.(int) $this->id
-        );
-
-        if (!$productAttributes) {
-            return false;
-        }
-
-        $ids = [];
-
-        foreach ($productAttributes as $productAttribute) {
-            $ids[] = (int) $productAttribute['id_product_attribute'];
-        }
-
-        $result = $conn->getArray(
+        $result = Db::readOnly()->getArray(
             '
 			SELECT pai.`id_image`, pai.`id_product_attribute`, il.`legend`
-			FROM `'._DB_PREFIX_.'product_attribute_image` pai
+			FROM `'._DB_PREFIX_.'product_attribute` pa
+			INNER JOIN `'._DB_PREFIX_.'product_attribute_image` pai
+			    ON pai.`id_product_attribute` = pa.`id_product_attribute`
 			LEFT JOIN `'._DB_PREFIX_.'image_lang` il ON (il.`id_image` = pai.`id_image`)
 			LEFT JOIN `'._DB_PREFIX_.'image` i ON (i.`id_image` = pai.`id_image`)
-			WHERE pai.`id_product_attribute` IN ('.implode(', ', $ids).') AND il.`id_lang` = '.(int) $idLang.' ORDER BY i.`position`'
+			WHERE pa.`id_product` = '.(int) $this->id.' AND il.`id_lang` = '.(int) $idLang.' ORDER BY i.`position`'
         );
 
         if (!$result) {
