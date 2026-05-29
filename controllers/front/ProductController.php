@@ -721,7 +721,7 @@ class ProductControllerCore extends FrontController
                 'cover'       => $cover,
                 'imgWidth'    => (int) $size['width'],
                 'mediumSize'  => Image::getSize(ImageType::getFormatedName('medium')),
-                'largeSize'   => Image::getSize(ImageType::getFormatedName('large')),
+                'largeSize'   => $size,
                 'homeSize'    => Image::getSize(ImageType::getFormatedName('home')),
                 'cartSize'    => Image::getSize(ImageType::getFormatedName('cart')),
                 'col_img_dir' => _PS_COL_IMG_DIR_,
