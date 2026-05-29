@@ -1878,8 +1878,13 @@ class ProductCore extends ObjectModel implements InitializationCallback
 
         $productImplode = [];
         foreach ($productIds as $idProduct) {
-            if ((int) $idProduct && !array_key_exists($idProduct.'-'.$idLang, static::$_cacheFeatures)) {
-                $productImplode[] = (int) $idProduct;
+            $idProduct = (int) $idProduct;
+            if ($idProduct) {
+                $cacheKey = $idProduct.'-'.(int) $idLang;
+                if (!array_key_exists($cacheKey, static::$_frontFeaturesCache)) {
+                    $productImplode[] = $idProduct;
+                    static::$_frontFeaturesCache[$cacheKey] = [];
+                }
             }
         }
         if (!count($productImplode)) {
