@@ -1854,9 +1854,9 @@ class CategoryCore extends ObjectModel implements InitializationCallback
         $front = in_array($context->controller->controller_type, ['front', 'modulefront']);
         $idSupplier = Tools::getIntValue('id_supplier');
 
-        $subcats = $this->getAllSubcategories();
         $catsToSearchIn = [$this->id];
-        if($subcats && $this->display_from_sub) {
+        if ($this->display_from_sub) {
+            $subcats = $this->getAllSubcategories();
             foreach ($subcats as $scat) {
                 $catsToSearchIn[] = $scat['id_category'];
             }
