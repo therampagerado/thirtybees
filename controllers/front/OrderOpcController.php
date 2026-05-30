@@ -692,8 +692,7 @@ class OrderOpcControllerCore extends ParentOrderController
             }
         }
 
-        if (Module::isInstalled('vatnumber')
-            && Module::isEnabled('vatnumber')
+        if (Module::isEnabled('vatnumber')
             && file_exists(_PS_MODULE_DIR_.'vatnumber/vatnumber.php')) {
             include_once _PS_MODULE_DIR_.'vatnumber/vatnumber.php';
 
