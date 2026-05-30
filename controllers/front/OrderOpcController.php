@@ -436,7 +436,8 @@ class OrderOpcControllerCore extends ParentOrderController
     {
         $addressDelivery = new Address($this->context->cart->id_address_delivery);
 
-        $cms = new CMS(Configuration::get('PS_CONDITIONS_CMS_ID'), $this->context->language->id);
+        $conditionsCmsId = (int) Configuration::get('PS_CONDITIONS_CMS_ID');
+        $cms = new CMS($conditionsCmsId, $this->context->language->id);
         $linkConditions = $this->context->link->getCMSLink($cms, $cms->link_rewrite, Configuration::get('PS_SSL_ENABLED'));
         if (!strpos($linkConditions, '?')) {
             $linkConditions .= '?content_only=1';
@@ -467,7 +468,7 @@ class OrderOpcControllerCore extends ParentOrderController
             'checkedTOS'                  => (int) $this->context->cookie->checkedTOS,
             'recyclablePackAllowed'       => (int) Configuration::get('PS_RECYCLABLE_PACK'),
             'giftAllowed'                 => (int) Configuration::get('PS_GIFT_WRAPPING'),
-            'cms_id'                      => (int) Configuration::get('PS_CONDITIONS_CMS_ID'),
+            'cms_id'                      => $conditionsCmsId,
             'conditions'                  => (int) Configuration::get('PS_CONDITIONS'),
             'link_conditions'             => $linkConditions,
             'recyclable'                  => (int) $this->context->cart->recyclable,
