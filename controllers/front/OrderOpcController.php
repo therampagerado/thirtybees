@@ -220,18 +220,21 @@ class OrderOpcControllerCore extends ParentOrderController
 
                         case 'updateAddressesSelected':
                             if ($this->context->customer->isLogged(true)) {
-                                $addressDelivery = new Address(Tools::getIntValue('id_address_delivery'));
+                                $idAddressDelivery = Tools::getIntValue('id_address_delivery');
+                                $idAddressInvoice = Tools::getIntValue('id_address_invoice');
+
+                                $addressDelivery = new Address($idAddressDelivery);
                                 $this->context->smarty->assign('isVirtualCart', $this->context->cart->isVirtualCart());
-                                $addressInvoice = (Tools::getIntValue('id_address_delivery') == Tools::getIntValue('id_address_invoice') ? $addressDelivery : new Address(Tools::getIntValue('id_address_invoice')));
+                                $addressInvoice = ($idAddressDelivery == $idAddressInvoice ? $addressDelivery : new Address($idAddressInvoice));
                                 if ($addressDelivery->id_customer != $this->context->customer->id || $addressInvoice->id_customer != $this->context->customer->id) {
                                     $this->errors[] = Tools::displayError('This address is not yours.');
-                                } elseif (!Address::isCountryActiveById(Tools::getIntValue('id_address_delivery'))) {
+                                } elseif (!Address::isCountryActiveById($idAddressDelivery)) {
                                     $this->errors[] = Tools::displayError('This address is not in a valid area.');
                                 } elseif (!Validate::isLoadedObject($addressDelivery) || !Validate::isLoadedObject($addressInvoice) || $addressInvoice->deleted || $addressDelivery->deleted) {
                                     $this->errors[] = Tools::displayError('This address is invalid.');
                                 } else {
-                                    $this->context->cart->id_address_delivery = Tools::getIntValue('id_address_delivery');
-                                    $this->context->cart->id_address_invoice = Tools::isSubmit('same') ? $this->context->cart->id_address_delivery : Tools::getIntValue('id_address_invoice');
+                                    $this->context->cart->id_address_delivery = $idAddressDelivery;
+                                    $this->context->cart->id_address_invoice = Tools::isSubmit('same') ? $this->context->cart->id_address_delivery : $idAddressInvoice;
                                     if (!$this->context->cart->update()) {
                                         $this->errors[] = Tools::displayError('An error occurred while updating your cart.');
                                     }
